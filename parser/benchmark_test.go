@@ -139,7 +139,7 @@ var _ = Describe("Ensure benchmarks are valid", func() {
 			if tc.valid {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(result).ToNot(BeNil())
-				Expect(offset).ToNot(Equal(0))
+				Expect(offset).To(Equal(len(tc.input)))
 				// TODO: should I be retaining the original timestamp format?
 				// Expect(result.String()).To(BeEquivalentTo(tc.input))
 			} else {
