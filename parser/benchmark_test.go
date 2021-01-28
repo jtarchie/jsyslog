@@ -23,7 +23,7 @@ type benchCase struct {
 }
 
 func rxpad(str string, lim int) string {
-	str = str + strings.Repeat(" ", lim)
+	str += strings.Repeat(" ", lim)
 	return str[:lim]
 }
 
@@ -144,7 +144,7 @@ var _ = Describe("Ensure benchmarks are valid", func() {
 				// Expect(result.String()).To(BeEquivalentTo(tc.input))
 			} else {
 				Expect(err).To(HaveOccurred())
-				//Expect(result).To(BeNil())
+				// Expect(result).To(BeNil())
 			}
 		})
 	}

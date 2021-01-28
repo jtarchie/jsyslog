@@ -78,7 +78,7 @@ func writeUDP(port int, message string) {
 	conn, err := net.Dial("udp", fmt.Sprintf("0.0.0.0:%d", port))
 	Expect(err).NotTo(HaveOccurred())
 
-	length, err := fmt.Fprintf(conn, message)
+	length, err := fmt.Fprint(conn, message)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(length).To(Equal(len(message)))
 

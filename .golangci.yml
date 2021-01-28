@@ -1,0 +1,35 @@
+run:
+  skip-files:
+  - parser/parse.go
+linters:
+  disable-all: true
+  enable:
+  - deadcode
+  - depguard
+  - dupl
+  - errcheck
+  - gochecknoinits
+  - gocritic
+  - gocyclo
+  - gofmt
+  - golint
+  - gosec
+  - gosimple
+  - govet
+  - ineffassign
+  - interfacer
+  - maligned
+  - megacheck
+  - misspell
+  - nakedret
+  - prealloc
+  - scopelint
+  - staticcheck
+  - structcheck
+  - stylecheck
+  - typecheck
+  - unconvert
+  - unparam
+  - unused
+  - varcheck
+

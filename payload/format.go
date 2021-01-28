@@ -8,6 +8,7 @@ import (
 )
 
 type Format int
+
 const (
 	RFC5424 Format = iota
 )
@@ -17,8 +18,7 @@ func (m *Message) String() string {
 }
 
 func (m *Message) Format(f Format) string {
-	switch f {
-	case RFC5424:
+	if f == RFC5424 {
 		return FormatRFC5424(m)
 	}
 
