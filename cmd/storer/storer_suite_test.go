@@ -33,7 +33,7 @@ var _ = Describe("When it executes", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		defer session.Kill()
-		Eventually(session.Err).Should(gbytes.Say(`starting UDP server`))
+		Eventually(session.Err).Should(gbytes.Say(`starting udp://0.0.0.0`))
 
 		writeUDP(port, validMessage)
 		Eventually(readFile(filename)).Should(ContainSubstring(validMessage))

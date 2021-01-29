@@ -3,9 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/alecthomas/kong"
-	"io"
+	"github.com/jtarchie/jsyslog/listeners"
 	"log"
-	"net"
 	"net/url"
 	"os"
 	"strconv"
@@ -27,7 +26,12 @@ func main() {
 		}),
 	)
 
-	server, err := createUDPServer(cli.Listen)
+	port, err := strconv.Atoi(cli.Listen.Port())
+	if err != nil {
+		log.Fatalf("could not parse port for UDP server: %s", err)
+	}
+
+	server, err := listeners.NewUDP(cli.Listen.Hostname(), port)
 	if err != nil {
 		log.Fatalf("could not create UDP server: %s", err)
 	}
@@ -37,42 +41,9 @@ func main() {
 		log.Fatalf("could not open file for write: %s", err)
 	}
 
-	log.Printf("writing to file: %s", cli.File)
-	listenForUDP(server, file)
-}
-
-func listenForUDP(server *net.UDPConn, writer io.Writer) {
-	p := make([]byte, 2048)
-	for {
-		n, _, err := server.ReadFromUDP(p[0:])
-		if err != nil {
-			log.Printf("could not read from UDP: %s", err)
-			continue
-		}
-
-		_, err = writer.Write(p[0:n])
-		if err != nil {
-			log.Printf("could not write to file: %s", err)
-		}
-	}
-}
-
-func createUDPServer(listen *url.URL) (*net.UDPConn, error) {
-	port, err := strconv.Atoi(listen.Port())
-	if err != nil {
-		return nil, fmt.Errorf("cannot parse port: %w", err)
-	}
-
-	addr := net.UDPAddr{
-		Port: port,
-		IP:   net.ParseIP(listen.Hostname()),
-	}
-
-	server, err := net.ListenUDP("udp", &addr)
-	if err != nil {
-		return nil, fmt.Errorf("cannot start server: %w", err)
-	}
-
-	log.Printf("starting UDP server on %d", port)
-	return server, nil
+	log.Printf("starting %s", cli.Listen.String())
+	server.ListenAndServe(func(message string) error {
+		_, err := file.WriteString(message)
+		return fmt.Errorf("could not write to file: %w", err)
+	})
 }
