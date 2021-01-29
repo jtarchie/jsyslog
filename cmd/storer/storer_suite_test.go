@@ -2,10 +2,11 @@ package main_test
 
 import (
 	"fmt"
+	"github.com/jtarchie/jsyslog/clients"
+	"github.com/jtarchie/jsyslog/listeners"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"io/ioutil"
-	"net"
 	"os/exec"
 	"testing"
 
@@ -26,7 +27,9 @@ var _ = Describe("When it executes", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		filename := writeFile(``)
-		port := getFreePort()
+
+		port, err := listeners.NextReusablePort()
+		Expect(err).NotTo(HaveOccurred())
 
 		command := exec.Command(path, "--listen", fmt.Sprintf("udp://0.0.0.0:%d", port), "--file", filename)
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
@@ -53,18 +56,6 @@ func writeFile(contents string) string {
 	return file.Name()
 }
 
-func getFreePort() int {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	Expect(err).NotTo(HaveOccurred())
-
-	l, err := net.ListenTCP("tcp", addr)
-	Expect(err).NotTo(HaveOccurred())
-
-	defer l.Close()
-
-	return l.Addr().(*net.TCPAddr).Port
-}
-
 func readFile(filename string) func() string {
 	return func() string {
 		contents, err := ioutil.ReadFile(filename)
@@ -75,13 +66,12 @@ func readFile(filename string) func() string {
 }
 
 func writeUDP(port int, message string) {
-	conn, err := net.Dial("udp", fmt.Sprintf("0.0.0.0:%d", port))
+	client, err := clients.NewUDP("0.0.0.0", port)
 	Expect(err).NotTo(HaveOccurred())
 
-	length, err := fmt.Fprint(conn, message)
+	err = client.WriteString(message)
 	Expect(err).NotTo(HaveOccurred())
-	Expect(length).To(Equal(len(message)))
 
-	err = conn.Close()
+	err = client.Close()
 	Expect(err).NotTo(HaveOccurred())
 }
