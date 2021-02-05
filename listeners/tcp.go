@@ -10,6 +10,7 @@ import (
 type TCPServer struct {
 	address net.TCPAddr
 }
+
 var _ Listener = &TCPServer{}
 
 func NewTCP(uri *url.URL) (*TCPServer, error) {

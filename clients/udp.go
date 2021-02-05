@@ -9,10 +9,11 @@ import (
 type UDPClient struct {
 	connection net.Conn
 }
-var  _ Client = &UDPClient{}
+
+var _ Client = &UDPClient{}
 
 func NewUDP(uri *url.URL) (*UDPClient, error) {
-	connection, err :=  net.Dial("udp", fmt.Sprintf("%s:%s", uri.Hostname(), uri.Port()))
+	connection, err := net.Dial("udp", fmt.Sprintf("%s:%s", uri.Hostname(), uri.Port()))
 	if err != nil {
 		return nil, fmt.Errorf("could not create UDP client (%s:%s): %w", uri.Hostname(), uri.Port(), err)
 	}

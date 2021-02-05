@@ -9,10 +9,11 @@ import (
 type TCPClient struct {
 	connection net.Conn
 }
-var  _ Client = &TCPClient{}
+
+var _ Client = &TCPClient{}
 
 func NewTCP(uri *url.URL) (*TCPClient, error) {
-	connection, err :=  net.Dial("tcp", fmt.Sprintf("%s:%s", uri.Hostname(), uri.Port()))
+	connection, err := net.Dial("tcp", fmt.Sprintf("%s:%s", uri.Hostname(), uri.Port()))
 	if err != nil {
 		return nil, fmt.Errorf("could not create TCP client (%s:%s): %w", uri.Hostname(), uri.Port(), err)
 	}

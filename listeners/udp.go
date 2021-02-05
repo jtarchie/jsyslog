@@ -28,6 +28,7 @@ func NewUDP(uri *url.URL) (*UDPServer, error) {
 }
 
 const maxUDPSize = 65507
+
 func (u *UDPServer) ListenAndServe(process ProcessMessage) error {
 	server, err := net.ListenUDP("udp", &u.address)
 	if err != nil {

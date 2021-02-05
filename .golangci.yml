@@ -6,7 +6,6 @@ linters:
   enable:
   - deadcode
   - depguard
-  - dupl
   - errcheck
   - gochecknoinits
   - gocritic
