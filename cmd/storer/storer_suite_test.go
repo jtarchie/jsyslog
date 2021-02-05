@@ -49,7 +49,7 @@ var _ = Describe("When it executes", func() {
 			Eventually(session.Err).Should(gbytes.Say(`starting udp://0.0.0.0`))
 
 			writeUDP(bindPort, validMessage)
-			Eventually(readFile(outputPath)).Should(ContainSubstring(validMessage))
+			Eventually(readFile(outputPath)).Should(Equal(validMessage))
 		})
 	})
 
@@ -62,8 +62,8 @@ var _ = Describe("When it executes", func() {
 			defer session.Kill()
 			Eventually(session.Err).Should(gbytes.Say(`starting tcp://0.0.0.0`))
 
-			writeTCP(bindPort, validMessage)
-			Eventually(readFile(outputPath)).Should(ContainSubstring(validMessage))
+			writeTCP(bindPort, fmt.Sprintf("%d%s", len(validMessage), validMessage))
+			Eventually(readFile(outputPath)).Should(Equal(validMessage))
 		})
 	})
 })
