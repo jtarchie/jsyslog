@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"strconv"
 )
 
 type CLI struct {
@@ -26,23 +25,25 @@ func main() {
 		}),
 	)
 
-	port, err := strconv.Atoi(cli.Listen.Port())
+	err := execute(cli)
 	if err != nil {
-		log.Fatalf("could not parse port for UDP server: %s", err)
+		log.Fatalf("could not execute: %s", err)
 	}
+}
 
-	server, err := listeners.NewUDP(cli.Listen.Hostname(), port)
+func execute(cli *CLI) error {
+	server, err := listeners.New(cli.Listen.String())
 	if err != nil {
-		log.Fatalf("could not create UDP server: %s", err)
+		return fmt.Errorf("could not create server: %w", err)
 	}
 
 	file, err := os.OpenFile(cli.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatalf("could not open file for write: %s", err)
+		return fmt.Errorf("could not open file for write: %w", err)
 	}
 
 	log.Printf("starting %s", cli.Listen.String())
-	server.ListenAndServe(func(message string) error {
+	return server.ListenAndServe(func(message string) error {
 		_, err := file.WriteString(message)
 		return fmt.Errorf("could not write to file: %w", err)
 	})

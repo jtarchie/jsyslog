@@ -3,16 +3,18 @@ package clients
 import (
 	"fmt"
 	"net"
+	"net/url"
 )
 
 type UDPClient struct {
 	connection net.Conn
 }
+var  _ Client = &UDPClient{}
 
-func NewUDP(hostname string, port int) (*UDPClient, error) {
-	connection, err :=  net.Dial("udp", fmt.Sprintf("%s:%d", hostname, port))
+func NewUDP(uri *url.URL) (*UDPClient, error) {
+	connection, err :=  net.Dial("udp", fmt.Sprintf("%s:%s", uri.Hostname(), uri.Port()))
 	if err != nil {
-		return nil, fmt.Errorf("could create UDP client (%s:%d): %w", hostname, port, err)
+		return nil, fmt.Errorf("could not create UDP client (%s:%s): %w", uri.Hostname(), uri.Port(), err)
 	}
 
 	return &UDPClient{

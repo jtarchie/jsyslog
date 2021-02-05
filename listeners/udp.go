@@ -3,18 +3,23 @@ package listeners
 import (
 	"fmt"
 	"net"
+	"net/url"
+	"strconv"
 )
-
-type ProcessMessage func(message string) error
 
 type UDPServer struct {
 	address net.UDPAddr
 }
 
-func NewUDP(hostname string, port int) (*UDPServer, error) {
+func NewUDP(uri *url.URL) (*UDPServer, error) {
+	port, err := strconv.Atoi(uri.Port())
+	if err != nil {
+		return nil, fmt.Errorf("could not parse port for UDP server (%s): %w", uri.String(), err)
+	}
+
 	address := net.UDPAddr{
 		Port: port,
-		IP:   net.ParseIP(hostname),
+		IP:   net.ParseIP(uri.Hostname()),
 	}
 
 	return &UDPServer{

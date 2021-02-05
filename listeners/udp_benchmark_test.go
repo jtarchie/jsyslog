@@ -15,10 +15,10 @@ var _ = Describe("UDP server", func() {
 		port, err := listeners.NextReusablePort()
 		Expect(err).NotTo(HaveOccurred())
 
-		server, err := listeners.NewUDP("0.0.0.0", port)
+		server, err := listeners.New(fmt.Sprintf("udp://0.0.0.0:%d", port))
 		Expect(err).NotTo(HaveOccurred())
 
-		client, err := clients.NewUDP("0.0.0.0", port)
+		client, err := clients.New(fmt.Sprintf("udp://0.0.0.0:%d", port))
 		Expect(err).NotTo(HaveOccurred())
 
 		b.Time("sending messages", func() {
