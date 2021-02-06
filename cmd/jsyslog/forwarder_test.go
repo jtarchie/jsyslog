@@ -8,6 +8,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"os/exec"
+	"time"
 )
 
 var _ = Describe("When forwarding messages", func() {
@@ -37,9 +38,9 @@ var _ = Describe("When forwarding messages", func() {
 			defer session.Kill()
 			Eventually(session.Err).Should(gbytes.Say(`starting udp://0.0.0.0`))
 
-			writeUDP(bindPort, validMessage)
+			writeUDP(bindPort, validUDPMessage)
 			Eventually(readFile(outputPath)).Should(
-				ContainSubstring(fmt.Sprintf("%s\n", validMessage)),
+				ContainSubstring(fmt.Sprintf("%s\n", validUDPMessage)),
 			)
 		})
 	})
@@ -53,9 +54,34 @@ var _ = Describe("When forwarding messages", func() {
 			defer session.Kill()
 			Eventually(session.Err).Should(gbytes.Say(`starting tcp://0.0.0.0`))
 
-			writeTCP(bindPort, fmt.Sprintf("%d%s", len(validMessage), validMessage))
+			writeTCP(bindPort, fmt.Sprintf("%d%s", len(validTCPMessage), validTCPMessage))
 			Eventually(readFile(outputPath)).Should(
-				ContainSubstring(fmt.Sprintf("%s\n", validMessage)),
+				ContainSubstring(fmt.Sprintf("%s\n", validTCPMessage)),
+			)
+		})
+	})
+
+	When("listening for udp and tcp on the same port", func() {
+		It("listens and writes syslog messages to a file", func() {
+			command := exec.Command(binPath, "forwarder",
+				"--from", fmt.Sprintf("tcp://0.0.0.0:%d", bindPort),
+				"--from", fmt.Sprintf("udp://0.0.0.0:%d", bindPort),
+				"--to", fmt.Sprintf("file://%s", outputPath),
+			)
+			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+
+			defer session.Kill()
+			Eventually(session.Err).Should(gbytes.Say(`starting udp://0.0.0.0`))
+
+			writeTCP(bindPort, fmt.Sprintf("%d%s", len(validTCPMessage), validTCPMessage))
+			writeUDP(bindPort, validUDPMessage)
+
+			Eventually(readFile(outputPath)).Should(
+				ContainSubstring(fmt.Sprintf("%s\n", validUDPMessage)),
+			)
+			Eventually(readFile(outputPath), 2*time.Second).Should(
+				ContainSubstring(fmt.Sprintf("%s\n", validTCPMessage)),
 			)
 		})
 	})

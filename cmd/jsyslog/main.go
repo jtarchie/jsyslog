@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/alecthomas/kong"
 	"github.com/jtarchie/jsyslog/listeners"
+	"golang.org/x/sync/errgroup"
 	"log"
 	"net/url"
 	"os"
@@ -15,24 +16,41 @@ type ForwardCmd struct {
 }
 
 func (l *ForwardCmd) Run() error {
-	server, err := listeners.New(l.From[0].String())
-	if err != nil {
-		return fmt.Errorf("could not start from (%s): %w", l.From[0].String(), err)
-	}
-
 	file, err := os.OpenFile(l.To[0].Path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return fmt.Errorf("could not start to (%s): %w", l.To[0].String(), err)
 	}
 
-	return server.ListenAndServe(func(message string) error {
-		_, err := file.WriteString(fmt.Sprintf("%s\n", message))
-		if err != nil {
-			return fmt.Errorf("could not write to (%s): %w", l.To[0].String(), err)
-		}
+	errGroup := &errgroup.Group{}
 
-		return nil
-	})
+	for _, uri := range l.From {
+		uri := uri
+		errGroup.Go(func() error {
+			server, err := listeners.New(uri.String())
+			if err != nil {
+				return fmt.Errorf(
+					"could not start from (%s): %w",
+					uri.String(),
+					err,
+				)
+			}
+
+			return server.ListenAndServe(func(message string) error {
+				_, err := file.WriteString(fmt.Sprintf("%s\n", message))
+				if err != nil {
+					return fmt.Errorf(
+						"could not write to (%s): %w",
+						uri.String(),
+						err,
+					)
+				}
+
+				return nil
+			})
+		})
+	}
+
+	return errGroup.Wait()
 }
 
 type CLI struct {
