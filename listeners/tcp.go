@@ -1,9 +1,8 @@
 package listeners
 
 import (
-	"bufio"
 	"fmt"
-	"io"
+	"github.com/panjf2000/gnet"
 	"net"
 	"net/url"
 	"strconv"
@@ -13,7 +12,43 @@ type TCPServer struct {
 	address net.TCPAddr
 }
 
-var _ Listener = &TCPServer{}
+type tcpCodec struct {
+	gnet.ICodec
+}
+
+func (cc *tcpCodec) Decode(c gnet.Conn) ([]byte, error) {
+	readLength := 0
+
+	for {
+		length, n := c.ReadN(1)
+		if length != 1 {
+			return nil, fmt.Errorf(
+				"could not read message length from TCP server (%s)",
+				c.LocalAddr().String(),
+			)
+		}
+
+		if n[0] == '<' {
+			break
+		}
+
+		readLength = readLength*10 + int(n[0]-'0')
+		_ = c.ShiftN(1)
+	}
+
+	actualLength, p := c.ReadN(readLength)
+
+	if actualLength < readLength {
+		return nil, fmt.Errorf(
+			"could not read from TCP server (%s)",
+			c.LocalAddr().String(),
+		)
+	}
+
+	_ = c.ShiftN(readLength)
+
+	return p, nil
+}
 
 func NewTCP(uri *url.URL) (*TCPServer, error) {
 	port, err := strconv.Atoi(uri.Port())
@@ -32,49 +67,24 @@ func NewTCP(uri *url.URL) (*TCPServer, error) {
 }
 
 func (t *TCPServer) ListenAndServe(process ProcessMessage) error {
-	server, err := net.ListenTCP("tcp", &t.address)
+	server := &syslogServer{
+		process: process,
+	}
+
+	err := gnet.Serve(
+		server,
+		fmt.Sprintf("tcp://%s", t.address.String()),
+		gnet.WithMulticore(true),
+		gnet.WithReusePort(true),
+		gnet.WithCodec(&tcpCodec{}),
+	)
 	if err != nil {
-		return fmt.Errorf("cannot start TCP server (%s): %w", &t.address, err)
+		return fmt.Errorf(
+			"could not start TCP sever (%s): %w",
+			t.address.String(),
+			err,
+		)
 	}
-	defer server.Close()
 
-	p := make([]byte, maxUDPSize)
-	for {
-		connection, err := server.Accept()
-		if err != nil {
-			return fmt.Errorf("could not accept connection from TCP server (%s): %w", &t.address, err)
-		}
-		defer connection.Close()
-
-		reader := bufio.NewReader(connection)
-
-		for {
-			readLength := 0
-
-			for {
-				n, err := reader.Peek(1)
-				if err != nil {
-					return fmt.Errorf("could not read message length from TCP server (%s): %w", &t.address, err)
-				}
-
-				if n[0] == '<' {
-					break
-				}
-
-				readLength = readLength*10 + int(n[0]-'0')
-				_, _ = reader.Discard(1)
-			}
-
-			actualLength, err := io.ReadFull(io.LimitReader(reader, int64(readLength)), p[:readLength])
-
-			if err != nil {
-				return fmt.Errorf("could not read from TCP server (%s): %w", &t.address, err)
-			}
-
-			err = process(string(p[0:actualLength]))
-			if err != nil {
-				return fmt.Errorf("could not process message from TCP server (%s): %w", &t.address, err)
-			}
-		}
-	}
+	return nil
 }

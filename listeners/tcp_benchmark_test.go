@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var _ = Describe("UDP server", func() {
+var _ = Describe("TCP server", func() {
 	Measure("handles many messages", func(b Benchmarker) {
 		stopClientServer := make(chan struct{})
 
@@ -33,24 +33,28 @@ var _ = Describe("UDP server", func() {
 			})
 		}()
 
-		client, err := clients.New(fmt.Sprintf("tcp://0.0.0.0:%d", port))
+		_, err = clients.New(fmt.Sprintf("tcp://0.0.0.0:%d", port))
 		Expect(err).NotTo(HaveOccurred())
 
 		b.Time("sending messages", func() {
 			timer := time.NewTimer(1 * time.Second)
 
 			var sentCounter int32
-			go func() {
-				for {
-					select {
-					case <-stopClientServer:
-						return
-					default:
-						_ = client.WriteString(listeners.PlaceholderValid6587)
-						atomic.AddInt32(&sentCounter, 1)
+			for i := 0; i < 5; i++ {
+				go func() {
+					client, _ := clients.New(fmt.Sprintf("tcp://0.0.0.0:%d", port))
+
+					for {
+						select {
+						case <-stopClientServer:
+							return
+						default:
+							_ = client.WriteString(listeners.PlaceholderValid6587)
+							atomic.AddInt32(&sentCounter, 1)
+						}
 					}
-				}
-			}()
+				}()
+			}
 
 			<-timer.C
 			close(stopClientServer)

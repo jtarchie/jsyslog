@@ -3,12 +3,11 @@ package main_test
 import (
 	"fmt"
 	"github.com/jtarchie/jsyslog/listeners"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"os/exec"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("When forwarding messages", func() {
@@ -39,7 +38,9 @@ var _ = Describe("When forwarding messages", func() {
 			Eventually(session.Err).Should(gbytes.Say(`starting udp://0.0.0.0`))
 
 			writeUDP(bindPort, validMessage)
-			Eventually(readFile(outputPath)).Should(Equal(validMessage))
+			Eventually(readFile(outputPath)).Should(
+				ContainSubstring(fmt.Sprintf("%s\n", validMessage)),
+			)
 		})
 	})
 
@@ -53,7 +54,9 @@ var _ = Describe("When forwarding messages", func() {
 			Eventually(session.Err).Should(gbytes.Say(`starting tcp://0.0.0.0`))
 
 			writeTCP(bindPort, fmt.Sprintf("%d%s", len(validMessage), validMessage))
-			Eventually(readFile(outputPath)).Should(Equal(validMessage))
+			Eventually(readFile(outputPath)).Should(
+				ContainSubstring(fmt.Sprintf("%s\n", validMessage)),
+			)
 		})
 	})
 })

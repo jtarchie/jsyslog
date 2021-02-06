@@ -2,6 +2,7 @@ package listeners
 
 import (
 	"fmt"
+	"github.com/panjf2000/gnet"
 	"net"
 	"net/url"
 	"strconv"
@@ -27,25 +28,24 @@ func NewUDP(uri *url.URL) (*UDPServer, error) {
 	}, nil
 }
 
-const maxUDPSize = 65507
-
 func (u *UDPServer) ListenAndServe(process ProcessMessage) error {
-	server, err := net.ListenUDP("udp", &u.address)
+	server := &syslogServer{
+		process: process,
+	}
+
+	err := gnet.Serve(
+		server,
+		fmt.Sprintf("udp://%s", u.address.String()),
+		gnet.WithMulticore(true),
+		gnet.WithReusePort(true),
+	)
 	if err != nil {
-		return fmt.Errorf("cannot start UDP server (%s): %w", &u.address, err)
+		return fmt.Errorf(
+			"could not start UDP sever (%s): %w",
+			u.address.String(),
+			err,
+		)
 	}
-	defer server.Close()
 
-	p := make([]byte, maxUDPSize)
-	for {
-		readLength, _, err := server.ReadFromUDP(p[0:])
-		if err != nil {
-			return fmt.Errorf("could not read from UDP server (%s): %w", &u.address, err)
-		}
-
-		err = process(string(p[0:readLength]))
-		if err != nil {
-			return fmt.Errorf("could not process message from UDP server (%s): %w", &u.address, err)
-		}
-	}
+	return nil
 }

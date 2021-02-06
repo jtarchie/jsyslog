@@ -56,8 +56,10 @@ func writeTCP(port int, message string) {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(client).To(BeAssignableToTypeOf(&clients.TCPClient{}))
 
-	err = client.WriteString(message)
-	Expect(err).NotTo(HaveOccurred())
+	for i := 0; i < 10; i++ {
+		err = client.WriteString(message)
+		Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("failed on message %d", i))
+	}
 
 	err = client.Close()
 	Expect(err).NotTo(HaveOccurred())

@@ -18,7 +18,7 @@ var _ = Describe("UDP server", func() {
 		server, err := listeners.New(fmt.Sprintf("udp://0.0.0.0:%d", port))
 		Expect(err).NotTo(HaveOccurred())
 
-		client, err := clients.New(fmt.Sprintf("udp://0.0.0.0:%d", port))
+		_, err = clients.New(fmt.Sprintf("udp://0.0.0.0:%d", port))
 		Expect(err).NotTo(HaveOccurred())
 
 		b.Time("sending messages", func() {
@@ -39,17 +39,21 @@ var _ = Describe("UDP server", func() {
 				})
 			}()
 			var sentCounter int32
-			go func() {
-				for {
-					select {
-					case <-stopClientServer:
-						return
-					default:
-						_ = client.WriteString(listeners.PlaceholderValid5424)
-						atomic.AddInt32(&sentCounter, 1)
+			for i := 0; i < 5; i++ {
+				go func() {
+					client, _ := clients.New(fmt.Sprintf("udp://0.0.0.0:%d", port))
+
+					for {
+						select {
+						case <-stopClientServer:
+							return
+						default:
+							_ = client.WriteString(listeners.PlaceholderValid5424)
+							atomic.AddInt32(&sentCounter, 1)
+						}
 					}
-				}
-			}()
+				}()
+			}
 
 			<-timer.C
 			close(stopClientServer)

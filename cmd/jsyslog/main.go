@@ -25,9 +25,8 @@ func (l *ForwardCmd) Run() error {
 		return fmt.Errorf("could not start to (%s): %w", l.To[0].String(), err)
 	}
 
-	log.Printf("starting %s", l.From[0].String())
 	return server.ListenAndServe(func(message string) error {
-		_, err := file.WriteString(message)
+		_, err := file.WriteString(fmt.Sprintf("%s\n", message))
 		if err != nil {
 			return fmt.Errorf("could not write to (%s): %w", l.To[0].String(), err)
 		}
