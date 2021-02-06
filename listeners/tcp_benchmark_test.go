@@ -46,7 +46,7 @@ var _ = Describe("UDP server", func() {
 					case <-stopClientServer:
 						return
 					default:
-						_ = client.WriteString(listeners.PlaceholderValid5424)
+						_ = client.WriteString(listeners.PlaceholderValid6587)
 						atomic.AddInt32(&sentCounter, 1)
 					}
 				}

@@ -3,6 +3,7 @@ package listeners
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"strconv"
@@ -46,30 +47,34 @@ func (t *TCPServer) ListenAndServe(process ProcessMessage) error {
 		defer connection.Close()
 
 		reader := bufio.NewReader(connection)
-		readLength := 0
 
 		for {
-			n, err := reader.Peek(1)
+			readLength := 0
+
+			for {
+				n, err := reader.Peek(1)
+				if err != nil {
+					return fmt.Errorf("could not read message length from TCP server (%s): %w", &t.address, err)
+				}
+
+				if n[0] == '<' {
+					break
+				}
+
+				readLength = readLength*10 + int(n[0]-'0')
+				_, _ = reader.Discard(1)
+			}
+
+			actualLength, err := io.ReadFull(io.LimitReader(reader, int64(readLength)), p[:readLength])
+
 			if err != nil {
-				return fmt.Errorf("could not read message length from TCP server (%s): %w", &t.address, err)
+				return fmt.Errorf("could not read from TCP server (%s): %w", &t.address, err)
 			}
 
-			if n[0] == '<' {
-				break
+			err = process(string(p[0:actualLength]))
+			if err != nil {
+				return fmt.Errorf("could not process message from TCP server (%s): %w", &t.address, err)
 			}
-
-			readLength = readLength*10 + int(n[0]-'0')
-			_, _ = reader.Discard(1)
-		}
-
-		actualLength, err := reader.Read(p[:readLength])
-		if err != nil {
-			return fmt.Errorf("could not read from TCP server (%s): %w", &t.address, err)
-		}
-
-		err = process(string(p[0:actualLength]))
-		if err != nil {
-			return fmt.Errorf("could not process message from TCP server (%s): %w", &t.address, err)
 		}
 	}
 }
