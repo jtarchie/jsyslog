@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/panjf2000/gnet"
 	"log"
+	"unsafe"
 )
 
 type syslogServer struct {
@@ -23,8 +24,12 @@ func (u *syslogServer) OnInitComplete(srv gnet.Server) gnet.Action {
 	return gnet.None
 }
 
+func b2s(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
+}
+
 func (u *syslogServer) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Action) {
-	err := u.process(string(frame))
+	err := u.process(b2s(frame))
 	if err != nil {
 		return nil, gnet.Close
 	}
