@@ -24,11 +24,10 @@ var _ = Describe("When forwarding messages", func() {
 		binPath, err = gexec.Build("github.com/jtarchie/jsyslog")
 		Expect(err).NotTo(HaveOccurred())
 
-		outputPath = strings.Replace(
+		outputPath = strings.ReplaceAll(
 			writeFile(``),
 			`\`,
 			`\\`,
-			0,
 		)
 
 		bindPort, err = listeners.NextReusablePort()
