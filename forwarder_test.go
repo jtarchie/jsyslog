@@ -20,7 +20,7 @@ var _ = Describe("When forwarding messages", func() {
 
 	BeforeEach(func() {
 		var err error
-		binPath, err = gexec.Build("github.com/jtarchie/jsyslog/cmd/jsyslog")
+		binPath, err = gexec.Build("github.com/jtarchie/jsyslog")
 		Expect(err).NotTo(HaveOccurred())
 
 		outputPath = writeFile(``)
