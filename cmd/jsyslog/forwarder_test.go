@@ -85,4 +85,34 @@ var _ = Describe("When forwarding messages", func() {
 			)
 		})
 	})
+
+	When("forwarding UDP to TCP to file", func() {
+		It("listens and writes syslog messages to a file", func() {
+			secondSession, err := gexec.Start(exec.Command(binPath,
+				"forwarder",
+				"--from", fmt.Sprintf("tcp://0.0.0.0:%d", bindPort),
+				"--to", fmt.Sprintf("file://%s", outputPath),
+			), GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+
+			defer secondSession.Kill()
+			Eventually(secondSession.Err).Should(gbytes.Say(`starting tcp://0.0.0.0`))
+
+			firstSession, err := gexec.Start(exec.Command(binPath,
+				"forwarder",
+				"--from", fmt.Sprintf("udp://0.0.0.0:%d", bindPort),
+				"--to", fmt.Sprintf("tcp://0.0.0.0:%d", bindPort),
+			), GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+
+			defer firstSession.Kill()
+			Eventually(firstSession.Err).Should(gbytes.Say(`starting udp://0.0.0.0`))
+
+			writeUDP(bindPort, validUDPMessage)
+
+			Eventually(readFile(outputPath)).Should(
+				ContainSubstring(fmt.Sprintf("%s\n", validUDPMessage)),
+			)
+		})
+	})
 })

@@ -21,6 +21,8 @@ func New(rawURL string) (Client, error) {
 		return NewUDP(uri)
 	case "tcp":
 		return NewTCP(uri)
+	case "file":
+		return NewFile(uri)
 	default:
 		return nil, fmt.Errorf("could not create client from scheme %q", uri.Scheme)
 	}

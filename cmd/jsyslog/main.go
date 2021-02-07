@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/alecthomas/kong"
+	clients "github.com/jtarchie/jsyslog/clients"
 	"github.com/jtarchie/jsyslog/listeners"
 	"golang.org/x/sync/errgroup"
 	"log"
 	"net/url"
-	"os"
 )
 
 type ForwardCmd struct {
@@ -16,9 +16,18 @@ type ForwardCmd struct {
 }
 
 func (l *ForwardCmd) Run() error {
-	file, err := os.OpenFile(l.To[0].Path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		return fmt.Errorf("could not start to (%s): %w", l.To[0].String(), err)
+	outputs := []clients.Client{}
+	for _, uri := range l.To {
+		output, err := clients.New(uri.String())
+		if err != nil {
+			return fmt.Errorf(
+				"could not create client (%s): %w",
+				uri.String(),
+				err,
+			)
+		}
+
+		outputs = append(outputs, output)
 	}
 
 	errGroup := &errgroup.Group{}
@@ -36,13 +45,15 @@ func (l *ForwardCmd) Run() error {
 			}
 
 			return server.ListenAndServe(func(message string) error {
-				_, err := file.WriteString(fmt.Sprintf("%s\n", message))
-				if err != nil {
-					return fmt.Errorf(
-						"could not write to (%s): %w",
-						uri.String(),
-						err,
-					)
+				for _, output := range outputs {
+					err := output.WriteString(fmt.Sprintf("%s\n", message))
+					if err != nil {
+						return fmt.Errorf(
+							"could not write to (%s): %w",
+							uri.String(),
+							err,
+						)
+					}
 				}
 
 				return nil
