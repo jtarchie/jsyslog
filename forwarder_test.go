@@ -8,6 +8,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -23,7 +24,12 @@ var _ = Describe("When forwarding messages", func() {
 		binPath, err = gexec.Build("github.com/jtarchie/jsyslog")
 		Expect(err).NotTo(HaveOccurred())
 
-		outputPath = writeFile(``)
+		outputPath = strings.Replace(
+			writeFile(``),
+			`\`,
+			`\\`,
+			0,
+		)
 
 		bindPort, err = listeners.NextReusablePort()
 		Expect(err).NotTo(HaveOccurred())
@@ -31,7 +37,10 @@ var _ = Describe("When forwarding messages", func() {
 
 	When("listening on a udp://", func() {
 		It("listens and writes syslog messages to a file", func() {
-			command := exec.Command(binPath, "forwarder", "--from", fmt.Sprintf("udp://0.0.0.0:%d", bindPort), "--to", fmt.Sprintf("file://%s", outputPath))
+			command := exec.Command(binPath, "forwarder",
+				"--from", fmt.Sprintf("udp://0.0.0.0:%d", bindPort),
+				"--to", fmt.Sprintf("file://%s", outputPath),
+			)
 			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -47,7 +56,10 @@ var _ = Describe("When forwarding messages", func() {
 
 	When("listening on a tcp://", func() {
 		It("listens and writes syslog messages to a file", func() {
-			command := exec.Command(binPath, "forwarder", "--from", fmt.Sprintf("tcp://0.0.0.0:%d", bindPort), "--to", fmt.Sprintf("file://%s", outputPath))
+			command := exec.Command(binPath, "forwarder",
+				"--from", fmt.Sprintf("tcp://0.0.0.0:%d", bindPort),
+				"--to", fmt.Sprintf("file://%s", outputPath),
+			)
 			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 
