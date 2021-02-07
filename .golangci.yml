@@ -1,6 +1,7 @@
 run:
   skip-files:
   - parser/parse.go
+  - log/init.go
 linters:
   disable-all: true
   enable:

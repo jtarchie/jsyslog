@@ -36,7 +36,7 @@ var _ = Describe("When forwarding messages", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			defer session.Kill()
-			Eventually(session.Err).Should(gbytes.Say(`starting udp://0.0.0.0`))
+			Eventually(session.Err).Should(gbytes.Say(`starting server`))
 
 			writeUDP(bindPort, validUDPMessage)
 			Eventually(readFile(outputPath)).Should(
@@ -52,7 +52,7 @@ var _ = Describe("When forwarding messages", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			defer session.Kill()
-			Eventually(session.Err).Should(gbytes.Say(`starting tcp://0.0.0.0`))
+			Eventually(session.Err).Should(gbytes.Say(`starting server`))
 
 			writeTCP(bindPort, fmt.Sprintf("%d%s", len(validTCPMessage), validTCPMessage))
 			Eventually(readFile(outputPath)).Should(
@@ -72,7 +72,7 @@ var _ = Describe("When forwarding messages", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			defer session.Kill()
-			Eventually(session.Err).Should(gbytes.Say(`starting udp://0.0.0.0`))
+			Eventually(session.Err).Should(gbytes.Say(`starting server`))
 
 			writeTCP(bindPort, fmt.Sprintf("%d%s", len(validTCPMessage), validTCPMessage))
 			writeUDP(bindPort, validUDPMessage)
@@ -96,7 +96,7 @@ var _ = Describe("When forwarding messages", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			defer secondSession.Kill()
-			Eventually(secondSession.Err).Should(gbytes.Say(`starting tcp://0.0.0.0`))
+			Eventually(secondSession.Err).Should(gbytes.Say(`starting server`))
 
 			firstSession, err := gexec.Start(exec.Command(binPath,
 				"forwarder",
@@ -106,7 +106,7 @@ var _ = Describe("When forwarding messages", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			defer firstSession.Kill()
-			Eventually(firstSession.Err).Should(gbytes.Say(`starting udp://0.0.0.0`))
+			Eventually(firstSession.Err).Should(gbytes.Say(`starting server`))
 
 			writeUDP(bindPort, validUDPMessage)
 

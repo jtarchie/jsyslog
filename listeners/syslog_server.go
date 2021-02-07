@@ -1,9 +1,9 @@
 package listeners
 
 import (
-	"fmt"
+	"github.com/jtarchie/jsyslog/log"
 	"github.com/panjf2000/gnet"
-	"log"
+	"go.uber.org/zap"
 	"unsafe"
 )
 
@@ -13,12 +13,10 @@ type syslogServer struct {
 }
 
 func (u *syslogServer) OnInitComplete(srv gnet.Server) gnet.Action {
-	log.Printf(
-		"starting %s",
-		fmt.Sprintf("%s://%s",
-			srv.Addr.Network(),
-			srv.Addr.String(),
-		),
+	log.Logger.Info(
+		"starting server",
+		zap.String("protocol", srv.Addr.Network()),
+		zap.String("address", srv.Addr.String()),
 	)
 
 	return gnet.None
@@ -28,7 +26,7 @@ func b2s(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
-func (u *syslogServer) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Action) {
+func (u *syslogServer) React(frame []byte, _ gnet.Conn) (out []byte, action gnet.Action) {
 	err := u.process(b2s(frame))
 	if err != nil {
 		return nil, gnet.Close

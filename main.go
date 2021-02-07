@@ -5,8 +5,9 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/jtarchie/jsyslog/clients"
 	"github.com/jtarchie/jsyslog/listeners"
+	"github.com/jtarchie/jsyslog/log"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	"log"
 	"net/url"
 )
 
@@ -81,6 +82,9 @@ func main() {
 
 	err := ctx.Run()
 	if err != nil {
-		log.Fatalf("could not execute: %s", err)
+		log.Logger.Fatal(
+			"could not execute",
+			zap.String("error", err.Error()),
+		)
 	}
 }
