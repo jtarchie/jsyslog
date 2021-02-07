@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/alecthomas/kong"
-	clients "github.com/jtarchie/jsyslog/clients"
+	"github.com/jtarchie/jsyslog/clients"
 	"github.com/jtarchie/jsyslog/listeners"
 	"golang.org/x/sync/errgroup"
 	"log"
