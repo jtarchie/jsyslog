@@ -27,7 +27,7 @@ var _ = Describe("When forwarding messages", func() {
 		outputPath = strings.ReplaceAll(
 			writeFile(``),
 			`\`,
-			`\\`,
+			`/`,
 		)
 
 		bindPort, err = listeners.NextReusablePort()
