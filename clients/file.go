@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path/filepath"
 )
 
 type FileClient struct {
@@ -44,7 +45,11 @@ func (f *FileClient) Close() error {
 }
 
 func NewFile(uri *url.URL) (*FileClient, error) {
-	file, err := os.OpenFile(uri.Path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(
+		filepath.FromSlash(uri.Path),
+		os.O_RDWR|os.O_CREATE|os.O_APPEND,
+		0666,
+	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"could not start to (%s): %w",
