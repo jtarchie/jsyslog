@@ -199,6 +199,7 @@ var _ = Describe("with a standard payload", func() {
 			Entry("with no timezone offset", "1985-04-12T23:20:50.52+00:00", "1985-04-12 23:20:50.52 +0000 UTC"),
 			Entry("with a positive timezone offset", "1985-04-12T23:20:50.52+02:00", "1985-04-12 21:20:50.52 +0000 UTC"),
 			Entry("with a negative timezone offset", "1985-04-12T18:20:50.52-02:00", "1985-04-12 20:20:50.52 +0000 UTC"),
+			Entry("with a minute-off timezone offset", "2018-12-31T23:59:59.999999-23:59", "2019-01-01 23:58:59.999999 +0000 UTC"),
 		)
 
 		It("fails parsing on unsupported formats", func() {
