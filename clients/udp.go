@@ -24,7 +24,7 @@ func NewUDP(uri *url.URL) (*UDPClient, error) {
 }
 
 func (u *UDPClient) WriteString(message string) error {
-	length, err := fmt.Fprint(u.connection, message)
+	length, err := u.connection.Write([]byte(message))
 	if err != nil {
 		return fmt.Errorf("could not write to UDP client (%s): %w", u.connection.LocalAddr(), err)
 	}

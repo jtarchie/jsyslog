@@ -11,7 +11,7 @@ type FileClient struct {
 }
 
 func (f *FileClient) WriteString(message string) error {
-	length, err := fmt.Fprint(f.file, message)
+	length, err := f.file.WriteString(message)
 	if err != nil {
 		return fmt.Errorf(
 			"could not write to file (%s): %w",
