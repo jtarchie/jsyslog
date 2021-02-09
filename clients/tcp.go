@@ -2,10 +2,10 @@ package clients
 
 import (
 	"fmt"
+	"github.com/jtarchie/jsyslog/url"
 	"math"
 	"math/rand"
 	"net"
-	"net/url"
 	"time"
 )
 
@@ -37,7 +37,7 @@ func NewTCP(uri *url.URL) (*TCPClient, error) {
 }
 
 func (t *TCPClient) WriteString(message string) error {
-	length, err := fmt.Fprint(t.connection, message)
+	length, err := t.connection.Write([]byte(message))
 	if err != nil {
 		return fmt.Errorf("could not write to TCP client (%s): %w", t.connection.LocalAddr(), err)
 	}

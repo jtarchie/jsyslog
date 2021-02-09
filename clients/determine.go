@@ -2,7 +2,7 @@ package clients
 
 import (
 	"fmt"
-	"net/url"
+	"github.com/jtarchie/jsyslog/url"
 )
 
 type Client interface {

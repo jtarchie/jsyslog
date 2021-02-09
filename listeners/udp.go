@@ -2,9 +2,9 @@ package listeners
 
 import (
 	"fmt"
+	"github.com/jtarchie/jsyslog/url"
 	"github.com/panjf2000/gnet"
 	"net"
-	"net/url"
 	"strconv"
 )
 

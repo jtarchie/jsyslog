@@ -2,7 +2,7 @@ package listeners
 
 import (
 	"fmt"
-	"net/url"
+	"github.com/jtarchie/jsyslog/url"
 )
 
 type ProcessMessage func(message string) error

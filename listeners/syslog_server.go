@@ -12,6 +12,28 @@ type syslogServer struct {
 	process ProcessMessage
 }
 
+func (u *syslogServer) OnOpened(c gnet.Conn) ([]byte, gnet.Action) {
+	log.Logger.Info(
+		"opening connection",
+		zap.String("local", c.LocalAddr().String()),
+		zap.String("protocol", c.LocalAddr().Network()),
+		zap.String("remote", c.RemoteAddr().String()),
+	)
+
+	return nil, gnet.None
+}
+
+func (u *syslogServer) OnClosed(c gnet.Conn, _ error) gnet.Action {
+	log.Logger.Info(
+		"closing connection",
+		zap.String("local", c.LocalAddr().String()),
+		zap.String("protocol", c.LocalAddr().Network()),
+		zap.String("remote", c.RemoteAddr().String()),
+	)
+
+	return gnet.None
+}
+
 func (u *syslogServer) OnInitComplete(srv gnet.Server) gnet.Action {
 	log.Logger.Info(
 		"starting server",
@@ -26,7 +48,14 @@ func b2s(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
-func (u *syslogServer) React(frame []byte, _ gnet.Conn) (out []byte, action gnet.Action) {
+func (u *syslogServer) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Action) {
+	log.Logger.Debug(
+		"received message",
+		zap.String("local", c.LocalAddr().String()),
+		zap.String("protocol", c.LocalAddr().Network()),
+		zap.String("remote", c.RemoteAddr().String()),
+	)
+
 	err := u.process(b2s(frame))
 	if err != nil {
 		return nil, gnet.Close

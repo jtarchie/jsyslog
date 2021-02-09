@@ -2,9 +2,8 @@ package clients
 
 import (
 	"fmt"
-	"net/url"
+	"github.com/jtarchie/jsyslog/url"
 	"os"
-	"path/filepath"
 )
 
 type FileClient struct {
@@ -46,7 +45,7 @@ func (f *FileClient) Close() error {
 
 func NewFile(uri *url.URL) (*FileClient, error) {
 	file, err := os.OpenFile(
-		filepath.FromSlash(uri.Path),
+		uri.Path,
 		os.O_RDWR|os.O_CREATE|os.O_APPEND,
 		0666,
 	)

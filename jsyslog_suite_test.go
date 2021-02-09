@@ -5,6 +5,7 @@ import (
 	"github.com/jtarchie/jsyslog/clients"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -60,6 +61,7 @@ func writeTCP(port int, message string) {
 	for i := 0; i < 10; i++ {
 		err = client.WriteString(message)
 		Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("failed on message %d", i))
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	err = client.Close()

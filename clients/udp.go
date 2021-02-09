@@ -2,8 +2,8 @@ package clients
 
 import (
 	"fmt"
+	"github.com/jtarchie/jsyslog/url"
 	"net"
-	"net/url"
 )
 
 type UDPClient struct {

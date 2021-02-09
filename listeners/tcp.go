@@ -2,10 +2,11 @@ package listeners
 
 import (
 	"fmt"
+	"github.com/jtarchie/jsyslog/url"
 	"github.com/panjf2000/gnet"
 	"net"
-	"net/url"
 	"strconv"
+	"time"
 )
 
 type TCPServer struct {
@@ -77,6 +78,7 @@ func (t *TCPServer) ListenAndServe(process ProcessMessage) error {
 		gnet.WithMulticore(true),
 		gnet.WithReusePort(true),
 		gnet.WithCodec(&tcpCodec{}),
+		gnet.WithTCPKeepAlive(10*time.Second),
 	)
 	if err != nil {
 		return fmt.Errorf(

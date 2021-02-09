@@ -45,8 +45,8 @@ var _ = Describe("When forwarding messages", func() {
 
 			defer session.Kill()
 			Eventually(session.Err).Should(gbytes.Say(`starting server`))
-
 			writeUDP(bindPort, validUDPMessage)
+
 			Eventually(readFile(outputPath)).Should(
 				ContainSubstring(fmt.Sprintf("%s\n", validUDPMessage)),
 			)
@@ -64,8 +64,9 @@ var _ = Describe("When forwarding messages", func() {
 
 			defer session.Kill()
 			Eventually(session.Err).Should(gbytes.Say(`starting server`))
-
 			writeTCP(bindPort, fmt.Sprintf("%d%s", len(validTCPMessage), validTCPMessage))
+			Eventually(session.Err).Should(gbytes.Say(`opening connection`))
+
 			Eventually(readFile(outputPath)).Should(
 				ContainSubstring(fmt.Sprintf("%s\n", validTCPMessage)),
 			)
@@ -87,6 +88,8 @@ var _ = Describe("When forwarding messages", func() {
 
 			writeTCP(bindPort, fmt.Sprintf("%d%s", len(validTCPMessage), validTCPMessage))
 			writeUDP(bindPort, validUDPMessage)
+			Eventually(session.Err).Should(gbytes.Say(`opening connection`))
+			Eventually(session.Err).Should(gbytes.Say(`closing connection`))
 
 			Eventually(readFile(outputPath)).Should(
 				ContainSubstring(fmt.Sprintf("%s\n", validUDPMessage)),

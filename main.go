@@ -8,22 +8,21 @@ import (
 	"github.com/jtarchie/jsyslog/log"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	"net/url"
 )
 
 type ForwardCmd struct {
-	From []*url.URL `help:"the uri to listen to messages" default:"tcp://0.0.0.0:9000" required:""`
-	To   []*url.URL `help:"the uri to forward messages to" required:""`
+	From []string `help:"the uri to listen to messages" default:"tcp://0.0.0.0:9000" required:""`
+	To   []string `help:"the uri to forward messages to" required:""`
 }
 
 func (l *ForwardCmd) Run() error {
 	outputs := []clients.Client{}
 	for _, uri := range l.To {
-		output, err := clients.New(uri.String())
+		output, err := clients.New(uri)
 		if err != nil {
 			return fmt.Errorf(
 				"could not create client (%s): %w",
-				uri.String(),
+				uri,
 				err,
 			)
 		}
@@ -36,11 +35,11 @@ func (l *ForwardCmd) Run() error {
 	for _, uri := range l.From {
 		uri := uri
 		errGroup.Go(func() error {
-			server, err := listeners.New(uri.String())
+			server, err := listeners.New(uri)
 			if err != nil {
 				return fmt.Errorf(
 					"could not start from (%s): %w",
-					uri.String(),
+					uri,
 					err,
 				)
 			}
@@ -51,7 +50,7 @@ func (l *ForwardCmd) Run() error {
 					if err != nil {
 						return fmt.Errorf(
 							"could not write to (%s): %w",
-							uri.String(),
+							uri,
 							err,
 						)
 					}
