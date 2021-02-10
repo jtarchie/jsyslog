@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jtarchie/jsyslog/clients"
 	"github.com/jtarchie/jsyslog/listeners"
+	"github.com/jtarchie/jsyslog/servers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"sync/atomic"
@@ -14,7 +15,7 @@ var _ = Describe("TCP server", func() {
 	Measure("handles many messages", func(b Benchmarker) {
 		stopClientServer := make(chan struct{})
 
-		port, err := listeners.NextReusablePort()
+		port, err := servers.NextReusablePort()
 		Expect(err).NotTo(HaveOccurred())
 
 		server, err := listeners.New(fmt.Sprintf("tcp://0.0.0.0:%d", port))

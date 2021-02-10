@@ -2,7 +2,7 @@ package main_test
 
 import (
 	"fmt"
-	"github.com/jtarchie/jsyslog/listeners"
+	"github.com/jtarchie/jsyslog/servers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -30,7 +30,7 @@ var _ = Describe("When forwarding messages", func() {
 			`/`,
 		)
 
-		bindPort, err = listeners.NextReusablePort()
+		bindPort, err = servers.NextReusablePort()
 		Expect(err).NotTo(HaveOccurred())
 	})
 

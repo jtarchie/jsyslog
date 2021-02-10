@@ -1,6 +1,7 @@
 package clients
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/jtarchie/jsyslog/url"
 	"math"
@@ -9,13 +10,20 @@ import (
 	"time"
 )
 
-type TCPClient struct {
+type TCP struct {
 	connection net.Conn
 }
 
-var _ Client = &TCPClient{}
+func (t *TCP) ReadString() (string, error) {
+	reader := bufio.NewReader(t.connection)
+	line, _, err := reader.ReadLine()
 
-func NewTCP(uri *url.URL) (*TCPClient, error) {
+	return string(line) + "\n", err
+}
+
+var _ Client = &TCP{}
+
+func NewTCP(uri *url.URL) (*TCP, error) {
 	var connection net.Conn
 	err := retry(func() error {
 		var err error
@@ -31,12 +39,12 @@ func NewTCP(uri *url.URL) (*TCPClient, error) {
 		return nil, fmt.Errorf("not successful after retries: %w", err)
 	}
 
-	return &TCPClient{
+	return &TCP{
 		connection: connection,
 	}, nil
 }
 
-func (t *TCPClient) WriteString(message string) error {
+func (t *TCP) WriteString(message string) error {
 	length, err := t.connection.Write([]byte(message))
 	if err != nil {
 		return fmt.Errorf("could not write to TCP client (%s): %w", t.connection.LocalAddr(), err)
@@ -49,7 +57,7 @@ func (t *TCPClient) WriteString(message string) error {
 	return nil
 }
 
-func (t *TCPClient) Close() error {
+func (t *TCP) Close() error {
 	err := t.connection.Close()
 	if err != nil {
 		return fmt.Errorf("could not close TCP client (%s): %w", t.connection.LocalAddr(), err)

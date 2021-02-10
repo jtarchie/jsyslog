@@ -6,11 +6,15 @@ import (
 	"os"
 )
 
-type FileClient struct {
+type File struct {
 	file *os.File
 }
 
-func (f *FileClient) WriteString(message string) error {
+func (f *File) ReadString() (string, error) {
+	return "", nil
+}
+
+func (f *File) WriteString(message string) error {
 	length, err := f.file.WriteString(message)
 	if err != nil {
 		return fmt.Errorf(
@@ -30,7 +34,7 @@ func (f *FileClient) WriteString(message string) error {
 	return nil
 }
 
-func (f *FileClient) Close() error {
+func (f *File) Close() error {
 	err := f.file.Close()
 	if err != nil {
 		return fmt.Errorf(
@@ -43,7 +47,7 @@ func (f *FileClient) Close() error {
 	return nil
 }
 
-func NewFile(uri *url.URL) (*FileClient, error) {
+func NewFile(uri *url.URL) (*File, error) {
 	file, err := os.OpenFile(
 		uri.Path,
 		os.O_RDWR|os.O_CREATE|os.O_APPEND,
@@ -56,7 +60,7 @@ func NewFile(uri *url.URL) (*FileClient, error) {
 			err,
 		)
 	}
-	return &FileClient{
+	return &File{
 		file: file,
 	}, nil
 }

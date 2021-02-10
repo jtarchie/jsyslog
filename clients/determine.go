@@ -8,6 +8,7 @@ import (
 type Client interface {
 	WriteString(string) error
 	Close() error
+	ReadString() (string, error)
 }
 
 func New(rawURL string) (Client, error) {
