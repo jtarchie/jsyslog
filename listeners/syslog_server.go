@@ -2,8 +2,10 @@ package listeners
 
 import (
 	"github.com/jtarchie/jsyslog/log"
+	"github.com/jtarchie/jsyslog/servers"
 	"github.com/panjf2000/gnet"
 	"go.uber.org/zap"
+	"io/ioutil"
 	"unsafe"
 )
 
@@ -62,4 +64,24 @@ func (u *syslogServer) React(frame []byte, c gnet.Conn) (out []byte, action gnet
 	}
 
 	return nil, gnet.None
+}
+
+type syslogHandler struct {
+	process ProcessMessage
+}
+
+var _ servers.Handler = &syslogHandler{}
+
+func (s syslogHandler) Receive(connection servers.Connection) error {
+	message, err := ioutil.ReadAll(connection)
+	if err != nil {
+		return err
+	}
+
+	err = s.process(string(message))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

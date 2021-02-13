@@ -1,51 +1,30 @@
 package listeners
 
 import (
-	"fmt"
+	"github.com/jtarchie/jsyslog/servers"
 	"github.com/jtarchie/jsyslog/url"
-	"github.com/panjf2000/gnet"
-	"net"
-	"strconv"
 )
 
 type UDPServer struct {
-	address net.UDPAddr
+	server  *servers.Server
+	handler *syslogHandler
 }
 
 func NewUDP(uri *url.URL) (*UDPServer, error) {
-	port, err := strconv.Atoi(uri.Port())
+	handler := &syslogHandler{}
+	server, err := servers.NewServer(uri.String(), handler)
 	if err != nil {
-		return nil, fmt.Errorf("could not parse port for UDP server (%s): %w", uri.String(), err)
-	}
-
-	address := net.UDPAddr{
-		Port: port,
-		IP:   net.ParseIP(uri.Hostname()),
+		return nil, err
 	}
 
 	return &UDPServer{
-		address: address,
+		server: server,
+		handler: handler,
 	}, nil
 }
 
 func (u *UDPServer) ListenAndServe(process ProcessMessage) error {
-	server := &syslogServer{
-		process: process,
-	}
+	u.handler.process = process
 
-	err := gnet.Serve(
-		server,
-		fmt.Sprintf("udp://%s", u.address.String()),
-		gnet.WithMulticore(true),
-		gnet.WithReusePort(true),
-	)
-	if err != nil {
-		return fmt.Errorf(
-			"could not start UDP sever (%s): %w",
-			u.address.String(),
-			err,
-		)
-	}
-
-	return nil
+	return u.server.ListenAndServe()
 }
