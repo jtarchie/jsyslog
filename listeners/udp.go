@@ -18,7 +18,7 @@ func NewUDP(uri *url.URL) (*UDPServer, error) {
 	}
 
 	return &UDPServer{
-		server: server,
+		server:  server,
 		handler: handler,
 	}, nil
 }

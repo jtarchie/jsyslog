@@ -70,6 +70,41 @@ var _ = Describe("When creating servers", func() {
 			Expect(response).To(Equal("Hello, World!\n"))
 		})
 	})
+
+	When("TCP and UDP bind to the same port", func() {
+		It("allows it to happen", func() {
+			port, err := servers.NextReusablePort()
+			Expect(err).NotTo(HaveOccurred())
+
+			tcpServer, err := servers.NewServer(
+				fmt.Sprintf("tcp://0.0.0.0:%d", port),
+				&echoHandler{},
+			)
+			Expect(err).NotTo(HaveOccurred())
+			defer tcpServer.Close()
+
+			udpServer, err := servers.NewServer(
+				fmt.Sprintf("udp://0.0.0.0:%d", port),
+				&echoHandler{},
+			)
+			Expect(err).NotTo(HaveOccurred())
+			defer udpServer.Close()
+
+			go func() {
+				_ = tcpServer.ListenAndServe()
+			}()
+
+			go func() {
+				_ = udpServer.ListenAndServe()
+			}()
+
+			tcpResponse := writeTCP(port, "Hello, World!\n")
+			Expect(tcpResponse).To(Equal("Hello, World!\n"))
+
+			udpResponse := writeUDP(port, "Hello, World!\n")
+			Expect(udpResponse).To(Equal("Hello, World!\n"))
+		})
+	})
 })
 
 func writeUDP(port int, message string) string {
