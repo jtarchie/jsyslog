@@ -8,6 +8,7 @@ linters:
   - deadcode
   - depguard
   - errcheck
+  - exportloopref
   - gochecknoinits
   - gocritic
   - gocyclo
@@ -17,13 +18,10 @@ linters:
   - gosimple
   - govet
   - ineffassign
-  - interfacer
-  - maligned
   - megacheck
   - misspell
   - nakedret
   - prealloc
-  - scopelint
   - staticcheck
   - structcheck
   - stylecheck
