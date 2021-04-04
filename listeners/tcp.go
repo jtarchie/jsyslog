@@ -3,6 +3,7 @@ package listeners
 import (
 	"fmt"
 	"github.com/jtarchie/jsyslog/servers"
+	"go.uber.org/zap"
 )
 
 type TCPServer struct {
@@ -67,10 +68,10 @@ func (t *TCPServer) Receive(connection servers.Connection) error {
 	}
 }
 
-func NewTCP(rawURL string) (*TCPServer, error) {
+func NewTCP(rawURL string, logger *zap.Logger) (*TCPServer, error) {
 	handler := &TCPServer{}
 
-	server, err := servers.NewServer(rawURL, handler)
+	server, err := servers.NewServer(rawURL, handler, logger)
 	if err != nil {
 		return nil, err
 	}

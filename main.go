@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/alecthomas/kong"
 	"github.com/jtarchie/jsyslog/commands"
-	"github.com/jtarchie/jsyslog/log"
 	"go.uber.org/zap"
+	"log"
 )
 
 type CLI struct {
@@ -12,6 +12,11 @@ type CLI struct {
 }
 
 func main() {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		log.Fatalf("could not start logger: %s", err)
+	}
+
 	cli := &CLI{}
 	ctx := kong.Parse(cli,
 		kong.Name("jsyslog"),
@@ -22,9 +27,9 @@ func main() {
 		}),
 	)
 
-	err := ctx.Run()
+	err = ctx.Run(logger)
 	if err != nil {
-		log.Logger.Fatal(
+		logger.Fatal(
 			"could not execute",
 			zap.String("error", err.Error()),
 		)

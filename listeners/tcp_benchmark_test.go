@@ -7,6 +7,7 @@ import (
 	"github.com/jtarchie/jsyslog/servers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"go.uber.org/zap"
 	"log"
 	"sync/atomic"
 	"time"
@@ -19,7 +20,7 @@ var _ = Describe("TCP server", func() {
 		port, err := servers.NextReusablePort()
 		Expect(err).NotTo(HaveOccurred())
 
-		server, err := listeners.New(fmt.Sprintf("tcp://0.0.0.0:%d", port))
+		server, err := listeners.New(fmt.Sprintf("tcp://0.0.0.0:%d", port), zap.NewNop())
 		Expect(err).NotTo(HaveOccurred())
 
 		var receivedCounter int32

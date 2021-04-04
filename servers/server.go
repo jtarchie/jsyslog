@@ -2,7 +2,6 @@ package servers
 
 import (
 	"fmt"
-	"github.com/jtarchie/jsyslog/log"
 	"github.com/jtarchie/jsyslog/url"
 	"go.uber.org/zap"
 	"net"
@@ -34,9 +33,14 @@ type Handler interface {
 type Server struct {
 	handler  Handler
 	protocol Protocol
+	logger   *zap.Logger
 }
 
-func NewServer(rawURL string, handler Handler) (*Server, error) {
+func NewServer(
+	rawURL string,
+	handler Handler,
+	logger *zap.Logger,
+) (*Server, error) {
 	var protocol Protocol
 
 	uri, err := url.Parse(rawURL)
@@ -62,11 +66,12 @@ func NewServer(rawURL string, handler Handler) (*Server, error) {
 	return &Server{
 		protocol: protocol,
 		handler:  handler,
+		logger:   logger,
 	}, nil
 }
 
 func (s *Server) ListenAndServe() error {
-	log.Logger.Info(
+	s.logger.Info(
 		"starting server",
 		zap.String("protocol", s.protocol.Name()),
 		zap.String("address", s.protocol.LocalAddr().String()),
@@ -74,14 +79,14 @@ func (s *Server) ListenAndServe() error {
 
 	protocol := s.protocol
 	defer func() {
-		log.Logger.Info(
+		s.logger.Info(
 			"stopping server",
 			zap.String("protocol", s.protocol.Name()),
 			zap.String("address", s.protocol.LocalAddr().String()),
 		)
 		err := protocol.Close()
 		if err != nil {
-			log.Logger.Error(
+			s.logger.Error(
 				"stopping server errored",
 				zap.String("protocol", s.protocol.Name()),
 				zap.String("address", s.protocol.LocalAddr().String()),
@@ -105,7 +110,7 @@ func (s *Server) ListenAndServe() error {
 
 func (s *Server) handleConnection(connection Connection) error {
 	go func() {
-		log.Logger.Info(
+		s.logger.Info(
 			"opening connection",
 			zap.String("protocol", s.protocol.Name()),
 			zap.String("to", s.protocol.LocalAddr().String()),
@@ -113,7 +118,7 @@ func (s *Server) handleConnection(connection Connection) error {
 		)
 		err := s.handler.Receive(connection)
 		if err != nil {
-			log.Logger.Error(
+			s.logger.Error(
 				"connection errored",
 				zap.String("protocol", s.protocol.Name()),
 				zap.String("to", s.protocol.LocalAddr().String()),
@@ -122,7 +127,7 @@ func (s *Server) handleConnection(connection Connection) error {
 			)
 		}
 
-		log.Logger.Info(
+		s.logger.Info(
 			"closing connection",
 			zap.String("protocol", s.protocol.Name()),
 			zap.String("to", s.protocol.LocalAddr().String()),

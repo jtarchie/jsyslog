@@ -7,6 +7,7 @@ import (
 	"github.com/jtarchie/jsyslog/servers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"go.uber.org/zap"
 	"sync/atomic"
 	"time"
 )
@@ -16,7 +17,7 @@ var _ = Describe("UDP server", func() {
 		port, err := servers.NextReusablePort()
 		Expect(err).NotTo(HaveOccurred())
 
-		server, err := listeners.New(fmt.Sprintf("udp://0.0.0.0:%d", port))
+		server, err := listeners.New(fmt.Sprintf("udp://0.0.0.0:%d", port), zap.NewNop())
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = clients.New(fmt.Sprintf("udp://0.0.0.0:%d", port))

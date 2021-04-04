@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jtarchie/jsyslog/clients"
 	"github.com/jtarchie/jsyslog/listeners"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -12,7 +13,7 @@ type ForwardCmd struct {
 	To   []string `help:"the uri to forward messages to" required:""`
 }
 
-func (l *ForwardCmd) Run() error {
+func (l *ForwardCmd) Run(logger *zap.Logger) error {
 	outputs := []clients.Client{}
 	for _, uri := range l.To {
 		output, err := clients.New(uri)
@@ -32,7 +33,7 @@ func (l *ForwardCmd) Run() error {
 	for _, uri := range l.From {
 		uri := uri
 		errGroup.Go(func() error {
-			server, err := listeners.New(uri)
+			server, err := listeners.New(uri, logger)
 			if err != nil {
 				return fmt.Errorf(
 					"could not start from (%s): %w",

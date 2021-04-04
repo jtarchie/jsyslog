@@ -7,6 +7,7 @@ import (
 	"github.com/jtarchie/jsyslog/servers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"go.uber.org/zap"
 	"testing"
 )
 
@@ -39,6 +40,7 @@ var _ = Describe("When creating servers", func() {
 			server, err := servers.NewServer(
 				fmt.Sprintf("udp://0.0.0.0:%d", port),
 				&echoHandler{},
+				zap.NewNop(),
 			)
 			Expect(err).NotTo(HaveOccurred())
 			defer server.Close()
@@ -59,6 +61,7 @@ var _ = Describe("When creating servers", func() {
 			server, err := servers.NewServer(
 				fmt.Sprintf("tcp://0.0.0.0:%d", port),
 				&echoHandler{},
+				zap.NewNop(),
 			)
 			Expect(err).NotTo(HaveOccurred())
 			defer server.Close()
@@ -79,6 +82,7 @@ var _ = Describe("When creating servers", func() {
 			tcpServer, err := servers.NewServer(
 				fmt.Sprintf("tcp://0.0.0.0:%d", port),
 				&echoHandler{},
+				zap.NewNop(),
 			)
 			Expect(err).NotTo(HaveOccurred())
 			defer tcpServer.Close()
@@ -86,6 +90,7 @@ var _ = Describe("When creating servers", func() {
 			udpServer, err := servers.NewServer(
 				fmt.Sprintf("udp://0.0.0.0:%d", port),
 				&echoHandler{},
+				zap.NewNop(),
 			)
 			Expect(err).NotTo(HaveOccurred())
 			defer udpServer.Close()

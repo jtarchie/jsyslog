@@ -2,6 +2,7 @@ package listeners
 
 import (
 	"github.com/jtarchie/jsyslog/servers"
+	"go.uber.org/zap"
 	"io/ioutil"
 )
 
@@ -24,10 +25,10 @@ func (u *UDPServer) Receive(connection servers.Connection) error {
 	return nil
 }
 
-func NewUDP(rawURL string) (*UDPServer, error) {
+func NewUDP(rawURL string, logger *zap.Logger) (*UDPServer, error) {
 	handler := &UDPServer{}
 
-	server, err := servers.NewServer(rawURL, handler)
+	server, err := servers.NewServer(rawURL, handler, logger)
 	if err != nil {
 		return nil, err
 	}
