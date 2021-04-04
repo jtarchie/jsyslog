@@ -3,7 +3,6 @@ package listeners
 import (
 	"fmt"
 	"github.com/jtarchie/jsyslog/servers"
-	"github.com/jtarchie/jsyslog/url"
 )
 
 type TCPServer struct {
@@ -68,10 +67,10 @@ func (t *TCPServer) Receive(connection servers.Connection) error {
 	}
 }
 
-func NewTCP(uri *url.URL) (*TCPServer, error) {
+func NewTCP(rawURL string) (*TCPServer, error) {
 	handler := &TCPServer{}
 
-	server, err := servers.NewServer(uri.String(), handler)
+	server, err := servers.NewServer(rawURL, handler)
 	if err != nil {
 		return nil, err
 	}

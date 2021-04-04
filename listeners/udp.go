@@ -2,7 +2,6 @@ package listeners
 
 import (
 	"github.com/jtarchie/jsyslog/servers"
-	"github.com/jtarchie/jsyslog/url"
 	"io/ioutil"
 )
 
@@ -25,10 +24,10 @@ func (u *UDPServer) Receive(connection servers.Connection) error {
 	return nil
 }
 
-func NewUDP(uri *url.URL) (*UDPServer, error) {
+func NewUDP(rawURL string) (*UDPServer, error) {
 	handler := &UDPServer{}
 
-	server, err := servers.NewServer(uri.String(), handler)
+	server, err := servers.NewServer(rawURL, handler)
 	if err != nil {
 		return nil, err
 	}

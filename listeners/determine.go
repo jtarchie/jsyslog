@@ -19,9 +19,9 @@ func New(rawURL string) (Listener, error) {
 
 	switch uri.Scheme {
 	case "udp":
-		return NewUDP(uri)
+		return NewUDP(rawURL)
 	case "tcp":
-		return NewTCP(uri)
+		return NewTCP(rawURL)
 	default:
 		return nil, fmt.Errorf("could not create server from scheme %q", uri.Scheme)
 	}
