@@ -61,7 +61,7 @@ var _ = Describe("UDP server", func() {
 			close(stopClientServer)
 
 			b.RecordValue("number of messages sent", float64(atomic.LoadInt32(&sentCounter)))
-			b.RecordValue("number of messages processes", float64(atomic.LoadInt32(&receivedCounter)))
+			b.RecordValue("number of messages processed", float64(atomic.LoadInt32(&receivedCounter)))
 		})
 
 	}, 5)
