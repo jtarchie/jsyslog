@@ -2,22 +2,29 @@ package servers
 
 import (
 	"fmt"
+	"github.com/jtarchie/jsyslog/log"
 	"github.com/jtarchie/jsyslog/url"
-	"io"
+	"go.uber.org/zap"
 	"net"
 )
 
 type Connection interface {
 	LocalAddr() net.Addr
 	RemoteAddr() net.Addr
-	io.Reader
-	io.Writer
+
+	Read([]byte) (int, error)
+	Write([]byte) (int, error)
+	Peek(int) ([]byte, error)
+	Discard(int) (int, error)
+
+	Close() error
 }
 
 type Protocol interface {
 	Close() error
 	Listen() (Connection, error)
 	LocalAddr() net.Addr
+	Name() string
 }
 
 type Handler interface {
@@ -59,8 +66,29 @@ func NewServer(rawURL string, handler Handler) (*Server, error) {
 }
 
 func (s *Server) ListenAndServe() error {
+	log.Logger.Info(
+		"starting server",
+		zap.String("protocol", s.protocol.Name()),
+		zap.String("address", s.protocol.LocalAddr().String()),
+	)
+
 	protocol := s.protocol
-	defer protocol.Close()
+	defer func() {
+		log.Logger.Info(
+			"stopping server",
+			zap.String("protocol", s.protocol.Name()),
+			zap.String("address", s.protocol.LocalAddr().String()),
+		)
+		err := protocol.Close()
+		if err != nil {
+			log.Logger.Error(
+				"stopping server errored",
+				zap.String("protocol", s.protocol.Name()),
+				zap.String("address", s.protocol.LocalAddr().String()),
+				zap.Error(err),
+			)
+		}
+	}()
 
 	for {
 		connection, err := protocol.Listen()
@@ -76,17 +104,39 @@ func (s *Server) ListenAndServe() error {
 }
 
 func (s *Server) handleConnection(connection Connection) error {
-	err := s.handler.Receive(connection)
-	if err != nil {
-		return fmt.Errorf(
-			"could not handle packet from server: %w",
-			err,
+	go func() {
+		log.Logger.Info(
+			"opening connection",
+			zap.String("protocol", s.protocol.Name()),
+			zap.String("to", s.protocol.LocalAddr().String()),
+			zap.String("from", connection.RemoteAddr().String()),
 		)
-	}
+		err := s.handler.Receive(connection)
+		if err != nil {
+			log.Logger.Error(
+				"connection errored",
+				zap.String("protocol", s.protocol.Name()),
+				zap.String("to", s.protocol.LocalAddr().String()),
+				zap.String("from", connection.RemoteAddr().String()),
+				zap.Error(err),
+			)
+		}
+
+		log.Logger.Info(
+			"closing connection",
+			zap.String("protocol", s.protocol.Name()),
+			zap.String("to", s.protocol.LocalAddr().String()),
+			zap.String("from", connection.RemoteAddr().String()),
+		)
+	}()
 
 	return nil
 }
 
 func (s *Server) Close() error {
 	return s.protocol.Close()
+}
+
+func (s *Server) LocalAddr() net.Addr {
+	return s.protocol.LocalAddr()
 }

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/jtarchie/jsyslog/url"
+	"io"
 	"net"
 )
 
@@ -55,6 +56,10 @@ func (u *UDP) Write(message []byte, connection Connection) error {
 	return nil
 }
 
+func (u *UDP) Name() string {
+	return "UDP"
+}
+
 const maxUDPBufferSize = 65_507
 
 func (u *UDP) Listen() (Connection, error) {
@@ -84,6 +89,18 @@ type udpConnection struct {
 	remote     net.Addr
 	buffer     *bufio.Reader
 	connection net.PacketConn
+}
+
+func (u *udpConnection) Close() error {
+	return u.connection.Close()
+}
+
+func (u *udpConnection) Peek(i int) ([]byte, error) {
+	return nil, io.EOF
+}
+
+func (u *udpConnection) Discard(i int) (int, error) {
+	return 0, io.EOF
 }
 
 func (u *udpConnection) Write(p []byte) (int, error) {

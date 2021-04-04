@@ -3,28 +3,43 @@ package listeners
 import (
 	"github.com/jtarchie/jsyslog/servers"
 	"github.com/jtarchie/jsyslog/url"
+	"io/ioutil"
 )
 
 type UDPServer struct {
 	server  *servers.Server
-	handler *syslogHandler
+	process ProcessMessage
+}
+
+func (u *UDPServer) Receive(connection servers.Connection) error {
+	message, err := ioutil.ReadAll(connection)
+	if err != nil {
+		return err
+	}
+
+	err = u.process(string(message))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func NewUDP(uri *url.URL) (*UDPServer, error) {
-	handler := &syslogHandler{}
+	handler := &UDPServer{}
+
 	server, err := servers.NewServer(uri.String(), handler)
 	if err != nil {
 		return nil, err
 	}
 
-	return &UDPServer{
-		server:  server,
-		handler: handler,
-	}, nil
+	handler.server = server
+
+	return handler, nil
 }
 
 func (u *UDPServer) ListenAndServe(process ProcessMessage) error {
-	u.handler.process = process
+	u.process = process
 
 	return u.server.ListenAndServe()
 }

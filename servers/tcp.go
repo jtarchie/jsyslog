@@ -53,7 +53,7 @@ func (t *TCP) Listen() (Connection, error) {
 
 	return &tcpConnection{
 		connection: connection,
-		buffer:     bufio.NewReader(connection),
+		buffer:     bufio.NewReaderSize(connection, 1024),
 	}, nil
 }
 
@@ -61,9 +61,25 @@ func (t *TCP) LocalAddr() net.Addr {
 	return t.listener.Addr()
 }
 
+func (t *TCP) Name() string {
+	return "TCP"
+}
+
 type tcpConnection struct {
 	buffer     *bufio.Reader
 	connection net.Conn
+}
+
+func (t *tcpConnection) Close() error {
+	return t.connection.Close()
+}
+
+func (t *tcpConnection) Peek(i int) ([]byte, error) {
+	return t.buffer.Peek(i)
+}
+
+func (t *tcpConnection) Discard(i int) (int, error) {
+	return t.buffer.Discard(i)
 }
 
 func (t *tcpConnection) Write(p []byte) (int, error) {

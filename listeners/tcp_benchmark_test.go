@@ -7,6 +7,7 @@ import (
 	"github.com/jtarchie/jsyslog/servers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"log"
 	"sync/atomic"
 	"time"
 )
@@ -32,6 +33,7 @@ var _ = Describe("TCP server", func() {
 					return nil
 				}
 			})
+			log.Printf("server finished: %s", err)
 		}()
 
 		_, err = clients.New(fmt.Sprintf("tcp://0.0.0.0:%d", port))

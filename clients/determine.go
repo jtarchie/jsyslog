@@ -21,7 +21,7 @@ func New(rawURL string) (Client, error) {
 	case "udp":
 		return NewUDP(uri)
 	case "tcp":
-		return NewTCP(uri)
+		return NewSyslogTCP(uri)
 	case "file":
 		return NewFile(uri)
 	default:

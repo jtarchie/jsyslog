@@ -2,91 +2,87 @@ package listeners
 
 import (
 	"fmt"
+	"github.com/jtarchie/jsyslog/servers"
 	"github.com/jtarchie/jsyslog/url"
-	"github.com/panjf2000/gnet"
-	"net"
-	"strconv"
-	"time"
 )
 
 type TCPServer struct {
-	address net.TCPAddr
+	server  *servers.Server
+	process ProcessMessage
 }
 
-type tcpCodec struct {
-	gnet.ICodec
-}
-
-func (cc *tcpCodec) Decode(c gnet.Conn) ([]byte, error) {
+func (t *TCPServer) Receive(connection servers.Connection) error {
 	readLength := 0
 
 	for {
-		length, n := c.ReadN(1)
-		if length != 1 {
-			return nil, fmt.Errorf(
-				"could not read message length from TCP server (%s)",
-				c.LocalAddr().String(),
+		n, err := connection.Peek(1)
+
+		if err != nil {
+			return fmt.Errorf(
+				"could not read message from TCP server (%s): %w",
+				t.server.LocalAddr(),
+				err,
 			)
 		}
 
-		if n[0] == '<' {
-			break
+		if len(n) != 1 {
+			return fmt.Errorf(
+				"could not read message length from TCP server (%s)",
+				t.server.LocalAddr(),
+			)
 		}
 
-		readLength = readLength*10 + int(n[0]-'0')
-		_ = c.ShiftN(1)
+		if n[0] == '<' && readLength > 0 {
+			goto readMessage
+		}
+
+		if '0' <= n[0] && n[0] <= '9' {
+			readLength = readLength*10 + int(n[0]-'0')
+		} else {
+			readLength = 0
+		}
+
+		_, _ = connection.Discard(1)
+		continue
+
+	readMessage:
+		p, _ := connection.Peek(readLength)
+
+		actualLength := len(p)
+
+		if actualLength < readLength {
+			return fmt.Errorf(
+				"could not read from TCP server (%s)",
+				t.server.LocalAddr(),
+			)
+		}
+
+		_, _ = connection.Discard(actualLength)
+
+		err = t.process(string(p))
+		if err != nil {
+			return err
+		}
+
+		readLength = 0
 	}
-
-	actualLength, p := c.ReadN(readLength)
-
-	if actualLength < readLength {
-		return nil, fmt.Errorf(
-			"could not read from TCP server (%s)",
-			c.LocalAddr().String(),
-		)
-	}
-
-	_ = c.ShiftN(readLength)
-
-	return p, nil
 }
 
 func NewTCP(uri *url.URL) (*TCPServer, error) {
-	port, err := strconv.Atoi(uri.Port())
+	handler := &TCPServer{}
+
+	server, err := servers.NewServer(uri.String(), handler)
 	if err != nil {
-		return nil, fmt.Errorf("could not parse port for TCP server (%s): %w", uri.String(), err)
+		return nil, err
 	}
 
-	address := net.TCPAddr{
-		Port: port,
-		IP:   net.ParseIP(uri.Hostname()),
-	}
+	handler.server = server
 
-	return &TCPServer{
-		address: address,
-	}, nil
+	return handler, nil
 }
 
 func (t *TCPServer) ListenAndServe(process ProcessMessage) error {
-	server := &syslogServer{
-		process: process,
-	}
+	t.process = process
 
-	err := gnet.Serve(
-		server,
-		fmt.Sprintf("tcp://%s", t.address.String()),
-		gnet.WithMulticore(true),
-		gnet.WithReusePort(true),
-		gnet.WithCodec(&tcpCodec{}),
-		gnet.WithTCPKeepAlive(10*time.Second),
-	)
-	if err != nil {
-		return fmt.Errorf(
-			"could not start TCP sever (%s): %w",
-			t.address.String(),
-			err,
-		)
-	}
-
-	return nil
+	return t.server.ListenAndServe()
 }

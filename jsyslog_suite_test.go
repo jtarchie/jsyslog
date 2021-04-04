@@ -56,7 +56,7 @@ func writeUDP(port int, message string) {
 func writeTCP(port int, message string) {
 	client, err := clients.New(fmt.Sprintf("tcp://0.0.0.0:%d", port))
 	Expect(err).NotTo(HaveOccurred())
-	Expect(client).To(BeAssignableToTypeOf(&clients.TCP{}))
+	Expect(client).To(BeAssignableToTypeOf(&clients.SyslogTCP{}))
 
 	for i := 0; i < 10; i++ {
 		err = client.WriteString(message)

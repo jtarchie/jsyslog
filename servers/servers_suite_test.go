@@ -67,7 +67,7 @@ var _ = Describe("When creating servers", func() {
 				_ = server.ListenAndServe()
 			}()
 			response := writeTCP(port, "Hello, World!\n")
-			Expect(response).To(Equal("Hello, World!\n"))
+			Expect(response).To(Equal("14Hello, World!\n"))
 		})
 	})
 
@@ -99,7 +99,7 @@ var _ = Describe("When creating servers", func() {
 			}()
 
 			tcpResponse := writeTCP(port, "Hello, World!\n")
-			Expect(tcpResponse).To(Equal("Hello, World!\n"))
+			Expect(tcpResponse).To(Equal("14Hello, World!\n"))
 
 			udpResponse := writeUDP(port, "Hello, World!\n")
 			Expect(udpResponse).To(Equal("Hello, World!\n"))
@@ -127,7 +127,7 @@ func writeUDP(port int, message string) string {
 func writeTCP(port int, message string) string {
 	client, err := clients.New(fmt.Sprintf("tcp://0.0.0.0:%d", port))
 	Expect(err).NotTo(HaveOccurred())
-	Expect(client).To(BeAssignableToTypeOf(&clients.TCP{}))
+	Expect(client).To(BeAssignableToTypeOf(&clients.SyslogTCP{}))
 
 	err = client.WriteString(message)
 	Expect(err).NotTo(HaveOccurred())
