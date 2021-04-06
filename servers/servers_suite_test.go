@@ -113,7 +113,7 @@ var _ = Describe("When creating servers", func() {
 })
 
 func writeUDP(port int, message string) string {
-	client, err := clients.New(fmt.Sprintf("udp://0.0.0.0:%d?read-timeout=1s", port))
+	client, err := clients.New(fmt.Sprintf("udp://0.0.0.0:%d", port))
 	Expect(err).NotTo(HaveOccurred())
 	Expect(client).To(BeAssignableToTypeOf(&clients.UDP{}))
 

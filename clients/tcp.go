@@ -12,13 +12,7 @@ import (
 
 type TCP struct {
 	connection net.Conn
-}
-
-func (t *TCP) ReadString() (string, error) {
-	reader := bufio.NewReader(t.connection)
-	line, _, err := reader.ReadLine()
-
-	return string(line) + "\n", err
+	config     *configuration
 }
 
 var _ Client = &TCP{}
@@ -39,12 +33,35 @@ func NewTCP(uri *url.URL) (*TCP, error) {
 		return nil, fmt.Errorf("not successful after retries: %w", err)
 	}
 
+	config, err := newConfig(uri)
+	if err != nil {
+		return nil, fmt.Errorf("could not validate configuration of TCP client (%s): %w", connection.LocalAddr(), err)
+	}
+
 	return &TCP{
 		connection: connection,
+		config:     config,
 	}, nil
 }
 
+func (t *TCP) ReadString() (string, error) {
+	err := t.connection.SetReadDeadline(time.Now().Add(t.config.readDeadline))
+	if err != nil {
+		return "", fmt.Errorf("could not set write deadline to TCP client (%s): %w", t.connection.LocalAddr(), err)
+	}
+
+	reader := bufio.NewReader(t.connection)
+	line, _, err := reader.ReadLine()
+
+	return string(line) + "\n", err
+}
+
 func (t *TCP) WriteString(message string) error {
+	err := t.connection.SetWriteDeadline(time.Now().Add(t.config.writeDeadline))
+	if err != nil {
+		return fmt.Errorf("could not set write deadline to TCP client (%s): %w", t.connection.LocalAddr(), err)
+	}
+
 	length, err := t.connection.Write([]byte(message))
 	if err != nil {
 		return fmt.Errorf("could not write to TCP client (%s): %w", t.connection.LocalAddr(), err)

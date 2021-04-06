@@ -9,6 +9,7 @@ import (
 
 type UDP struct {
 	connection net.Conn
+	config     *configuration
 }
 
 var _ Client = &UDP{}
@@ -19,48 +20,14 @@ func NewUDP(uri *url.URL) (*UDP, error) {
 		return nil, fmt.Errorf("could not create UDP client (%s:%s): %w", uri.Hostname(), uri.Port(), err)
 	}
 
-	if timeout := uri.Query().Get("read-timeout"); timeout != "" {
-		duration, err := time.ParseDuration(timeout)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"could not parse read timeout duration for UDP client (%s): %w",
-				connection.LocalAddr().String(),
-				err,
-			)
-		}
-
-		err = connection.SetReadDeadline(time.Now().Add(duration))
-		if err != nil {
-			return nil, fmt.Errorf(
-				"could not set read timeout duration for UDP client (%s): %w",
-				connection.LocalAddr().String(),
-				err,
-			)
-		}
-	}
-
-	if timeout := uri.Query().Get("write-timeout"); timeout != "" {
-		duration, err := time.ParseDuration(timeout)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"could not parse write timeout duration for UDP client (%s): %w",
-				connection.LocalAddr().String(),
-				err,
-			)
-		}
-
-		err = connection.SetWriteDeadline(time.Now().Add(duration))
-		if err != nil {
-			return nil, fmt.Errorf(
-				"could not set write timeout duration for UDP client (%s): %w",
-				connection.LocalAddr().String(),
-				err,
-			)
-		}
+	config, err := newConfig(uri)
+	if err != nil {
+		return nil, fmt.Errorf("could not validate configuration of UDP client (%s): %w", connection.LocalAddr(), err)
 	}
 
 	return &UDP{
 		connection: connection,
+		config: config,
 	}, nil
 }
 
@@ -76,6 +43,11 @@ func (u *UDP) Close() error {
 const maxUDPBufferSize = 65_507
 
 func (u *UDP) ReadString() (string, error) {
+	err := u.connection.SetReadDeadline(time.Now().Add(u.config.readDeadline))
+	if err != nil {
+		return "", fmt.Errorf("could not set write deadline to UDP client (%s): %w", u.connection.LocalAddr(), err)
+	}
+
 	buffer := make([]byte, maxUDPBufferSize)
 
 	actualN, err := u.connection.Read(buffer)
@@ -87,6 +59,11 @@ func (u *UDP) ReadString() (string, error) {
 }
 
 func (u *UDP) WriteString(message string) error {
+	err := u.connection.SetWriteDeadline(time.Now().Add(u.config.writeDeadline))
+	if err != nil {
+		return fmt.Errorf("could not set write deadline to UDP client (%s): %w", u.connection.LocalAddr(), err)
+	}
+
 	length, err := u.connection.Write([]byte(message))
 	if err != nil {
 		return fmt.Errorf("could not write to UDP client (%s): %w", u.connection.LocalAddr(), err)
