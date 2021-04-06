@@ -53,7 +53,7 @@ var _ = Describe("TCP server", func() {
 						case <-stopClientServer:
 							return
 						default:
-							_ = client.WriteString(listeners.PlaceholderValid6587)
+							_ = client.WriteString(listeners.PlaceholderValid5424)
 							atomic.AddInt32(&sentCounter, 1)
 						}
 					}
