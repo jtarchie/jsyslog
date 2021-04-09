@@ -5,6 +5,7 @@ import (
 	"github.com/jtarchie/jsyslog/url"
 	"go.uber.org/zap"
 	"net"
+	"sync/atomic"
 )
 
 type Connection interface {
@@ -31,9 +32,10 @@ type Handler interface {
 }
 
 type Server struct {
-	handler  Handler
-	protocol Protocol
-	logger   *zap.Logger
+	handler          Handler
+	protocol         Protocol
+	logger           *zap.Logger
+	totalConnections uint64
 }
 
 func NewServer(
@@ -109,31 +111,36 @@ func (s *Server) ListenAndServe() error {
 }
 
 func (s *Server) handleConnection(connection Connection) error {
-	go func() {
+	id := atomic.AddUint64(&s.totalConnections, 1)
+
+	go func(connection Connection) {
 		s.logger.Info(
 			"opening connection",
+			zap.String("from", connection.RemoteAddr().String()),
 			zap.String("protocol", s.protocol.Name()),
 			zap.String("to", s.protocol.LocalAddr().String()),
-			zap.String("from", connection.RemoteAddr().String()),
+			zap.Uint64("id", id),
 		)
 		err := s.handler.Receive(connection)
 		if err != nil {
 			s.logger.Error(
 				"connection errored",
+				zap.Error(err),
+				zap.String("from", connection.RemoteAddr().String()),
 				zap.String("protocol", s.protocol.Name()),
 				zap.String("to", s.protocol.LocalAddr().String()),
-				zap.String("from", connection.RemoteAddr().String()),
-				zap.Error(err),
+				zap.Uint64("id", id),
 			)
 		}
 
 		s.logger.Info(
 			"closing connection",
+			zap.String("from", connection.RemoteAddr().String()),
 			zap.String("protocol", s.protocol.Name()),
 			zap.String("to", s.protocol.LocalAddr().String()),
-			zap.String("from", connection.RemoteAddr().String()),
+			zap.Uint64("id", id),
 		)
-	}()
+	}(connection)
 
 	return nil
 }

@@ -27,7 +27,7 @@ func NewUDP(uri *url.URL) (*UDP, error) {
 
 	return &UDP{
 		connection: connection,
-		config: config,
+		config:     config,
 	}, nil
 }
 
