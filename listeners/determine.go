@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type ProcessMessage func(message string) error
+type ProcessMessage func(message []byte) error
 
 type Listener interface {
 	ListenAndServe(process ProcessMessage) error

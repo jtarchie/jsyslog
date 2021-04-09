@@ -17,7 +17,7 @@ func (u *UDPServer) Receive(connection servers.Connection) error {
 		return err
 	}
 
-	err = u.process(string(message))
+	err = u.process(message)
 	if err != nil {
 		return err
 	}

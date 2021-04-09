@@ -59,7 +59,7 @@ func (t *TCPServer) Receive(connection servers.Connection) error {
 
 		_, _ = connection.Discard(actualLength)
 
-		err = t.process(string(p))
+		err = t.process(p)
 		if err != nil {
 			return err
 		}

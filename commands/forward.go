@@ -14,7 +14,8 @@ type ForwardCmd struct {
 }
 
 func (l *ForwardCmd) Run(logger *zap.Logger) error {
-	outputs := []clients.Client{}
+	var outputs []clients.Client
+
 	for _, uri := range l.To {
 		output, err := clients.New(uri)
 		if err != nil {
@@ -42,7 +43,7 @@ func (l *ForwardCmd) Run(logger *zap.Logger) error {
 				)
 			}
 
-			return server.ListenAndServe(func(message string) error {
+			return server.ListenAndServe(func(message []byte) error {
 				for _, output := range outputs {
 					err := output.WriteString(fmt.Sprintf("%s\n", message))
 					if err != nil {

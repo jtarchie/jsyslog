@@ -25,7 +25,7 @@ var _ = Describe("TCP server", func() {
 
 		var receivedCounter int32
 		go func() {
-			err = server.ListenAndServe(func(_ string) error {
+			err = server.ListenAndServe(func(_ []byte) error {
 				select {
 				case <-stopClientServer:
 					return fmt.Errorf("time finished")
