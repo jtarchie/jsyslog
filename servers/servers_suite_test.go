@@ -3,6 +3,7 @@ package servers_test
 import (
 	"bufio"
 	"fmt"
+	"github.com/fgrosse/zaptest"
 	"github.com/jtarchie/jsyslog/clients"
 	"github.com/jtarchie/jsyslog/servers"
 	. "github.com/onsi/ginkgo"
@@ -16,15 +17,23 @@ func TestServers(t *testing.T) {
 	RunSpecs(t, "Servers Suite")
 }
 
-type echoHandler struct{}
+type echoHandler struct {
+	logger *zap.Logger
+}
 
-func (e echoHandler) Receive(connection servers.Connection) error {
+func (e *echoHandler) Receive(connection servers.Connection) error {
 	reader := bufio.NewReader(connection)
+
+	e.logger.Info("reading from server")
 	line, _, err := reader.ReadLine()
 	if err != nil {
 		return err
 	}
 
+	e.logger.Info(
+		"echoing to client",
+		zap.ByteString("line", line),
+	)
 	_, err = connection.Write(append(line, []byte("\n")...))
 	return err
 }
@@ -32,6 +41,12 @@ func (e echoHandler) Receive(connection servers.Connection) error {
 var _ servers.Handler = &echoHandler{}
 
 var _ = Describe("When creating servers", func() {
+	var logger *zap.Logger
+
+	BeforeEach(func() {
+		logger = zaptest.LoggerWriter(GinkgoWriter)
+	})
+
 	When("a UDP server echos back", func() {
 		It("captures the echo", func() {
 			port, err := servers.NextReusablePort()
@@ -39,11 +54,15 @@ var _ = Describe("When creating servers", func() {
 
 			server, err := servers.NewServer(
 				fmt.Sprintf("udp://0.0.0.0:%d", port),
-				&echoHandler{},
-				zap.NewNop(),
+				&echoHandler{
+					logger: logger,
+				},
+				logger,
 			)
 			Expect(err).NotTo(HaveOccurred())
-			defer server.Close()
+			defer func() {
+				_ = server.Close()
+			}()
 
 			go func() {
 				_ = server.ListenAndServe()
@@ -60,8 +79,10 @@ var _ = Describe("When creating servers", func() {
 
 			server, err := servers.NewServer(
 				fmt.Sprintf("tcp://0.0.0.0:%d", port),
-				&echoHandler{},
-				zap.NewNop(),
+				&echoHandler{
+					logger: logger,
+				},
+				logger,
 			)
 			Expect(err).NotTo(HaveOccurred())
 			defer server.Close()
@@ -81,16 +102,20 @@ var _ = Describe("When creating servers", func() {
 
 			tcpServer, err := servers.NewServer(
 				fmt.Sprintf("tcp://0.0.0.0:%d", port),
-				&echoHandler{},
-				zap.NewNop(),
+				&echoHandler{
+					logger: logger,
+				},
+				logger,
 			)
 			Expect(err).NotTo(HaveOccurred())
 			defer tcpServer.Close()
 
 			udpServer, err := servers.NewServer(
 				fmt.Sprintf("udp://0.0.0.0:%d", port),
-				&echoHandler{},
-				zap.NewNop(),
+				&echoHandler{
+					logger: logger,
+				},
+				logger,
 			)
 			Expect(err).NotTo(HaveOccurred())
 			defer udpServer.Close()
@@ -98,7 +123,6 @@ var _ = Describe("When creating servers", func() {
 			go func() {
 				_ = tcpServer.ListenAndServe()
 			}()
-
 			go func() {
 				_ = udpServer.ListenAndServe()
 			}()

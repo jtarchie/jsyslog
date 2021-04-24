@@ -33,9 +33,10 @@ type Handler interface {
 
 type Server struct {
 	handler          Handler
-	protocol         Protocol
 	logger           *zap.Logger
+	protocol         Protocol
 	totalConnections uint64
+	worker           *Worker
 }
 
 func NewServer(
@@ -69,33 +70,21 @@ func NewServer(
 		protocol: protocol,
 		handler:  handler,
 		logger:   logger,
+		worker:   NewWorker(15, logger),
 	}, nil
 }
 
 func (s *Server) ListenAndServe() error {
-	s.logger.Info(
-		"starting server",
-		zap.String("protocol", s.protocol.Name()),
-		zap.String("address", s.protocol.LocalAddr().String()),
-	)
-
+	logger := s.logger
 	protocol := s.protocol
-	defer func() {
-		s.logger.Info(
-			"stopping server",
-			zap.String("protocol", s.protocol.Name()),
-			zap.String("address", s.protocol.LocalAddr().String()),
-		)
-		err := protocol.Close()
-		if err != nil {
-			s.logger.Error(
-				"stopping server errored",
-				zap.String("protocol", s.protocol.Name()),
-				zap.String("address", s.protocol.LocalAddr().String()),
-				zap.Error(err),
-			)
-		}
-	}()
+	worker := s.worker
+
+	worker.Start()
+	logger.Info(
+		"starting server",
+		zap.String("protocol", protocol.Name()),
+		zap.String("address", protocol.LocalAddr().String()),
+	)
 
 	for {
 		connection, err := protocol.Listen()
@@ -103,50 +92,51 @@ func (s *Server) ListenAndServe() error {
 			return fmt.Errorf("could not listen for connection (%s): %w", protocol.LocalAddr().String(), err)
 		}
 
-		err = s.handleConnection(connection)
-		if err != nil {
-			return err
-		}
+		id := atomic.AddUint64(&s.totalConnections, 1)
+		worker.Run(func(workerID int) error {
+			logger.Info(
+				"opening connection",
+				zap.String("protocol", protocol.Name()),
+				zap.String("address", protocol.LocalAddr().String()),
+				zap.Uint64("connectionID", id),
+				zap.Int("workerID", workerID),
+			)
+
+			defer logger.Info(
+				"closing connection",
+				zap.String("protocol", protocol.Name()),
+				zap.String("address", protocol.LocalAddr().String()),
+				zap.Uint64("connectionID", id),
+				zap.Int("workerID", workerID),
+			)
+			return s.handler.Receive(connection)
+		})
 	}
 }
 
-func (s *Server) handleConnection(connection Connection) error {
-	id := atomic.AddUint64(&s.totalConnections, 1)
-
-	go func(connection Connection) {
-		s.logger.Info(
-			"opening connection",
-			zap.String("from", connection.RemoteAddr().String()),
-			zap.String("protocol", s.protocol.Name()),
-			zap.String("to", s.protocol.LocalAddr().String()),
-			zap.Uint64("id", id),
-		)
-		err := s.handler.Receive(connection)
-		if err != nil {
-			s.logger.Error(
-				"connection errored",
-				zap.Error(err),
-				zap.String("from", connection.RemoteAddr().String()),
-				zap.String("protocol", s.protocol.Name()),
-				zap.String("to", s.protocol.LocalAddr().String()),
-				zap.Uint64("id", id),
-			)
-		}
-
-		s.logger.Info(
-			"closing connection",
-			zap.String("from", connection.RemoteAddr().String()),
-			zap.String("protocol", s.protocol.Name()),
-			zap.String("to", s.protocol.LocalAddr().String()),
-			zap.Uint64("id", id),
-		)
-	}(connection)
-
-	return nil
-}
-
 func (s *Server) Close() error {
-	return s.protocol.Close()
+	logger := s.logger
+	protocol := s.protocol
+	worker := s.worker
+
+	defer worker.Stop()
+
+	logger.Info(
+		"stopping server",
+		zap.String("protocol", protocol.Name()),
+		zap.String("address", protocol.LocalAddr().String()),
+	)
+	err := protocol.Close()
+	if err != nil {
+		logger.Error(
+			"stopping server errored",
+			zap.String("protocol", protocol.Name()),
+			zap.String("address", protocol.LocalAddr().String()),
+			zap.Error(err),
+		)
+		return err
+	}
+	return nil
 }
 
 func (s *Server) LocalAddr() net.Addr {

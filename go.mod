@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/alecthomas/kong v0.2.16
+	github.com/fgrosse/zaptest v1.1.0
 	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.4
 	github.com/pkg/errors v0.9.1 // indirect

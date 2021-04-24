@@ -14,7 +14,7 @@ type ForwardCmd struct {
 }
 
 func (l *ForwardCmd) Run(logger *zap.Logger) error {
-	var outputs []clients.Client
+	outputs := []clients.Client{}
 
 	for _, uri := range l.To {
 		output, err := clients.New(uri)
