@@ -1,6 +1,6 @@
 name: Go
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   golangci:
@@ -13,7 +13,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.15]
+        go-version: [1.15, 1.16]
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
