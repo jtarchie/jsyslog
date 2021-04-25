@@ -2,13 +2,11 @@ package listeners_test
 
 import (
 	"fmt"
+	"github.com/fgrosse/zaptest"
 	"github.com/jtarchie/jsyslog/clients"
 	"github.com/jtarchie/jsyslog/listeners"
-	"github.com/jtarchie/jsyslog/servers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"go.uber.org/zap"
-	"log"
 	"sync/atomic"
 	"time"
 )
@@ -17,15 +15,14 @@ var _ = Describe("TCP server", func() {
 	Measure("handles many messages", func(b Benchmarker) {
 		stopClientServer := make(chan struct{})
 
-		port, err := servers.NextReusablePort()
+		port, err := listeners.NextReusablePort()
 		Expect(err).NotTo(HaveOccurred())
 
-		server, err := listeners.New(fmt.Sprintf("tcp://0.0.0.0:%d", port), zap.NewNop())
-		Expect(err).NotTo(HaveOccurred())
-
+		logger := zaptest.LoggerWriter(GinkgoWriter)
 		var receivedCounter int32
-		go func() {
-			err = server.ListenAndServe(func(_ []byte) error {
+		server, err := listeners.New(
+			fmt.Sprintf("tcp://0.0.0.0:%d", port),
+			func(msg []byte) error {
 				select {
 				case <-stopClientServer:
 					return fmt.Errorf("time finished")
@@ -33,15 +30,20 @@ var _ = Describe("TCP server", func() {
 					atomic.AddInt32(&receivedCounter, 1)
 					return nil
 				}
-			})
-			log.Printf("server finished: %s", err)
+			},
+			logger,
+		)
+		Expect(err).NotTo(HaveOccurred())
+
+		go func() {
+			_ = server.ListenAndServe()
 		}()
 
 		_, err = clients.New(fmt.Sprintf("tcp://0.0.0.0:%d", port))
 		Expect(err).NotTo(HaveOccurred())
 
 		b.Time("sending messages", func() {
-			timer := time.NewTimer(1 * time.Second)
+			timer := time.NewTimer(2 * time.Second)
 
 			var sentCounter int32
 			for i := 0; i < 5; i++ {
@@ -67,5 +69,5 @@ var _ = Describe("TCP server", func() {
 			b.RecordValue("number of messages processed", float64(atomic.LoadInt32(&receivedCounter)))
 		})
 
-	}, 5)
+	}, 3)
 })

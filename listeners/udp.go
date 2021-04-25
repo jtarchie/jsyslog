@@ -1,45 +1,41 @@
 package listeners
 
 import (
-	"github.com/jtarchie/jsyslog/servers"
+	"fmt"
+	"github.com/panjf2000/gnet"
 	"go.uber.org/zap"
-	"io/ioutil"
 )
 
 type UDPServer struct {
-	server  *servers.Server
+	logger  *zap.Logger
 	process ProcessMessage
+	rawURL  string
 }
 
-func (u *UDPServer) Receive(connection servers.Connection) error {
-	message, err := ioutil.ReadAll(connection)
-	if err != nil {
-		return err
+func NewUDP(rawURL string, process ProcessMessage, logger *zap.Logger) (*UDPServer, error) {
+	return &UDPServer{
+		rawURL:  rawURL,
+		logger:  logger,
+		process: process,
+	}, nil
+}
+
+func (u *UDPServer) ListenAndServe() error {
+	server := &syslogServer{
+		protocol: "udp",
+		logger:   u.logger,
+		process:  u.process,
 	}
 
-	err = u.process(message)
+	err := gnet.Serve(
+		server,
+		u.rawURL,
+		gnet.WithMulticore(true),
+		gnet.WithReusePort(true),
+	)
 	if err != nil {
-		return err
+		return fmt.Errorf("udp server had an issues: %w", err)
 	}
 
 	return nil
-}
-
-func NewUDP(rawURL string, logger *zap.Logger) (*UDPServer, error) {
-	handler := &UDPServer{}
-
-	server, err := servers.NewServer(rawURL, handler, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	handler.server = server
-
-	return handler, nil
-}
-
-func (u *UDPServer) ListenAndServe(process ProcessMessage) error {
-	u.process = process
-
-	return u.server.ListenAndServe()
 }

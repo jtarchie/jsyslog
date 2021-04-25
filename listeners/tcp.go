@@ -2,87 +2,86 @@ package listeners
 
 import (
 	"fmt"
-	"github.com/jtarchie/jsyslog/servers"
+	"github.com/panjf2000/gnet"
 	"go.uber.org/zap"
 )
 
 type TCPServer struct {
-	server  *servers.Server
+	logger  *zap.Logger
 	process ProcessMessage
+	rawURL  string
 }
 
-func (t *TCPServer) Receive(connection servers.Connection) error {
+type tcpSyslogCodec struct {
+	gnet.ICodec
+	logger *zap.Logger
+}
+
+func (s *tcpSyslogCodec) Decode(c gnet.Conn) ([]byte, error) {
 	readLength := 0
+	readDigits := 0
 
 	for {
-		n, err := connection.Peek(1)
 
-		if err != nil {
-			return fmt.Errorf(
-				"could not read message from TCP server (%s): %w",
-				t.server.LocalAddr(),
-				err,
-			)
-		}
-
-		if len(n) != 1 {
-			return fmt.Errorf(
+		length, n := c.ReadN(readDigits + 1)
+		if length != readDigits+1 {
+			return nil, fmt.Errorf(
 				"could not read message length from TCP server (%s)",
-				t.server.LocalAddr(),
+				c.LocalAddr().String(),
 			)
 		}
 
-		if n[0] == '<' && readLength > 0 {
-			goto readMessage
+		if n[readDigits] == '<' {
+			break
 		}
 
-		if '0' <= n[0] && n[0] <= '9' {
-			readLength = readLength*10 + int(n[0]-'0')
-		} else {
-			readLength = 0
-		}
-
-		_, _ = connection.Discard(1)
-		continue
-
-	readMessage:
-		p, _ := connection.Peek(readLength)
-
-		actualLength := len(p)
-
-		if actualLength < readLength {
-			return fmt.Errorf(
-				"could not read from TCP server (%s)",
-				t.server.LocalAddr(),
-			)
-		}
-
-		_, _ = connection.Discard(actualLength)
-
-		err = t.process(p)
-		if err != nil {
-			return err
-		}
-
-		readLength = 0
+		readLength = readLength*10 + int(n[readDigits]-'0')
+		readDigits++
 	}
+
+	expectReadLength := readLength + readDigits
+	actualLength, p := c.ReadN(expectReadLength)
+
+	if actualLength < expectReadLength {
+		return nil, fmt.Errorf(
+			"could not read from TCP server (%s)",
+			c.LocalAddr().String(),
+		)
+	}
+
+	_ = c.ShiftN(expectReadLength)
+
+	message := p[readDigits:]
+	return message, nil
 }
 
-func NewTCP(rawURL string, logger *zap.Logger) (*TCPServer, error) {
-	handler := &TCPServer{}
+func NewTCP(rawURL string, process ProcessMessage, logger *zap.Logger) (*TCPServer, error) {
+	return &TCPServer{
+		rawURL:  rawURL,
+		logger:  logger,
+		process: process,
+	}, nil
+}
 
-	server, err := servers.NewServer(rawURL, handler, logger)
+func (t *TCPServer) ListenAndServe() error {
+	server := &syslogServer{
+		protocol: "tcp",
+		logger:   t.logger,
+		process:  t.process,
+	}
+
+	err := gnet.Serve(
+		server,
+		t.rawURL,
+		gnet.WithMulticore(true),
+		gnet.WithReusePort(true),
+		gnet.WithCodec(&tcpSyslogCodec{
+			logger: t.logger,
+		}),
+	)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("tcp server had an issues: %w", err)
 	}
 
-	handler.server = server
-
-	return handler, nil
-}
-
-func (t *TCPServer) ListenAndServe(process ProcessMessage) error {
-	t.process = process
-
-	return t.server.ListenAndServe()
+	return nil
 }

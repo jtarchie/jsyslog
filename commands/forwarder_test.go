@@ -2,7 +2,7 @@ package commands_test
 
 import (
 	"fmt"
-	"github.com/jtarchie/jsyslog/servers"
+	"github.com/jtarchie/jsyslog/listeners"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -30,7 +30,7 @@ var _ = Describe("When forwarding messages", func() {
 			`/`,
 		)
 
-		bindPort, err = servers.NextReusablePort()
+		bindPort, err = listeners.NextReusablePort()
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -44,7 +44,7 @@ var _ = Describe("When forwarding messages", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			defer session.Kill()
-			Eventually(session.Err).Should(gbytes.Say(`starting server`))
+			Eventually(session.Err).Should(gbytes.Say(`started server`))
 			writeUDP(bindPort, validUDPMessage)
 
 			Eventually(readFile(outputPath)).Should(
@@ -63,9 +63,9 @@ var _ = Describe("When forwarding messages", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			defer session.Kill()
-			Eventually(session.Err).Should(gbytes.Say(`starting server`))
+			Eventually(session.Err).Should(gbytes.Say(`started server`))
 			writeTCP(bindPort, validTCPMessage)
-			Eventually(session.Err).Should(gbytes.Say(`opening connection`))
+			Eventually(session.Err).Should(gbytes.Say(`accepting connection`))
 
 			Eventually(readFile(outputPath)).Should(
 				ContainSubstring(fmt.Sprintf("%s\n", validTCPMessage)),
@@ -84,11 +84,11 @@ var _ = Describe("When forwarding messages", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			defer session.Kill()
-			Eventually(session.Err).Should(gbytes.Say(`starting server`))
+			Eventually(session.Err).Should(gbytes.Say(`started server`))
 
 			writeTCP(bindPort, validTCPMessage)
 			writeUDP(bindPort, validUDPMessage)
-			Eventually(session.Err).Should(gbytes.Say(`opening connection`))
+			Eventually(session.Err).Should(gbytes.Say(`accepting connection`))
 			Eventually(session.Err).Should(gbytes.Say(`closing connection`))
 
 			Eventually(readFile(outputPath)).Should(
@@ -110,7 +110,7 @@ var _ = Describe("When forwarding messages", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			defer secondSession.Kill()
-			Eventually(secondSession.Err).Should(gbytes.Say(`starting server`))
+			Eventually(secondSession.Err).Should(gbytes.Say(`started server`))
 
 			firstSession, err := gexec.Start(exec.Command(binPath,
 				"forwarder",
@@ -120,7 +120,7 @@ var _ = Describe("When forwarding messages", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			defer firstSession.Kill()
-			Eventually(firstSession.Err).Should(gbytes.Say(`starting server`))
+			Eventually(firstSession.Err).Should(gbytes.Say(`started server`))
 
 			writeUDP(bindPort, validUDPMessage)
 

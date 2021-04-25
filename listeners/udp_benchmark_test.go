@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/jtarchie/jsyslog/clients"
 	"github.com/jtarchie/jsyslog/listeners"
-	"github.com/jtarchie/jsyslog/servers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
@@ -14,32 +13,36 @@ import (
 
 var _ = Describe("UDP server", func() {
 	Measure("handles many messages", func(b Benchmarker) {
-		port, err := servers.NextReusablePort()
+		port, err := listeners.NextReusablePort()
 		Expect(err).NotTo(HaveOccurred())
 
-		server, err := listeners.New(fmt.Sprintf("udp://0.0.0.0:%d", port), zap.NewNop())
+		stopClientServer := make(chan struct{})
+		var receivedCounter int32
+
+		server, err := listeners.New(
+			fmt.Sprintf("udp://0.0.0.0:%d", port),
+			func(_ []byte) error {
+				select {
+				case <-stopClientServer:
+					return fmt.Errorf("time finished")
+				default:
+					atomic.AddInt32(&receivedCounter, 1)
+					return nil
+				}
+			},
+			zap.NewNop(),
+		)
 		Expect(err).NotTo(HaveOccurred())
+
+		go func() {
+			err = server.ListenAndServe()
+		}()
 
 		_, err = clients.New(fmt.Sprintf("udp://0.0.0.0:%d", port))
 		Expect(err).NotTo(HaveOccurred())
 
 		b.Time("sending messages", func() {
-			timer := time.NewTimer(1 * time.Second)
-			stopClientServer := make(chan struct{})
-
-			var receivedCounter int32
-
-			go func() {
-				err = server.ListenAndServe(func(_ []byte) error {
-					select {
-					case <-stopClientServer:
-						return fmt.Errorf("time finished")
-					default:
-						atomic.AddInt32(&receivedCounter, 1)
-						return nil
-					}
-				})
-			}()
+			timer := time.NewTimer(2 * time.Second)
 			var sentCounter int32
 			for i := 0; i < 5; i++ {
 				go func() {
@@ -64,5 +67,5 @@ var _ = Describe("UDP server", func() {
 			b.RecordValue("number of messages processed", float64(atomic.LoadInt32(&receivedCounter)))
 		})
 
-	}, 5)
+	}, 3)
 })

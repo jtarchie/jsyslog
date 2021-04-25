@@ -2,12 +2,11 @@ package clients_test
 
 import (
 	"fmt"
-	"github.com/jtarchie/jsyslog/servers"
+	"github.com/jtarchie/jsyslog/clients"
+	"github.com/jtarchie/jsyslog/listeners"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
-
-	"github.com/jtarchie/jsyslog/clients"
 )
 
 var _ = Describe("Configuring Clients", func() {
@@ -16,16 +15,16 @@ var _ = Describe("Configuring Clients", func() {
 
 		When(fmt.Sprintf("the %q client is configured", protocol), func() {
 			var (
-				server *servers.Server
+				server listeners.Listener
 				port   int
 			)
 
 			BeforeEach(func() {
 				var err error
-				port, err = servers.NextReusablePort()
+				port, err = listeners.NextReusablePort()
 				Expect(err).NotTo(HaveOccurred())
 
-				server, err = servers.NewServer(
+				server, err = listeners.New(
 					fmt.Sprintf("%s://0.0.0.0:%d", protocol, port),
 					nil,
 					zap.NewNop(),
@@ -33,18 +32,17 @@ var _ = Describe("Configuring Clients", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			AfterEach(func() {
-				err := server.Close()
-				Expect(err).NotTo(HaveOccurred())
-			})
-
 			It("errors with an unused value", func() {
+				//nolint:errcheck
+				go server.ListenAndServe()
 				_, err := clients.New(fmt.Sprintf("%s://0.0.0.0:%d?unusable-value=1", protocol, port))
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("nusable-value"))
 			})
 
 			It("allows read-deadline as duration", func() {
+				//nolint:errcheck
+				go server.ListenAndServe()
 				_, err := clients.New(fmt.Sprintf("%s://0.0.0.0:%d?read-deadline=1s", protocol, port))
 				Expect(err).NotTo(HaveOccurred())
 
@@ -53,6 +51,8 @@ var _ = Describe("Configuring Clients", func() {
 			})
 
 			It("allows write-deadline as duration", func() {
+				//nolint:errcheck
+				go server.ListenAndServe()
 				_, err := clients.New(fmt.Sprintf("%s://0.0.0.0:%d?write-deadline=1s", protocol, port))
 				Expect(err).NotTo(HaveOccurred())
 
